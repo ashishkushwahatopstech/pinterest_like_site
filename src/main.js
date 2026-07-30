@@ -87,6 +87,7 @@ window.appState = {
       showUploadModal(
         boards,
         async (boardId, file, title, description, progressCallback) => {
+          const supabase = await getSupabase(); // Get fresh authenticated client
           const accessToken = await getGoogleDriveToken();
           const isBackupEnabled = localStorage.getItem('backup_storage_enabled') === 'true';
           
