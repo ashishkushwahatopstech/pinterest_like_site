@@ -1,0 +1,8 @@
+name = "foliodrive-auth-worker"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+FIREBASE_PROJECT_ID = "foliodrive"
+GOOGLE_CLIENT_ID = "460473477284-a4q77vvtarii277tpcb9ofqjomkuj24n.apps.googleusercontent.com"
+SUPABASE_URL = "https://fftkjikbkewirsfoqwen.supabase.co"
