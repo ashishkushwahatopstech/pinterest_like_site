@@ -2,25 +2,31 @@
 
 :root {
   /* Colors */
-  --bg-primary: #09090b;
-  --bg-secondary: #18181b;
-  --bg-tertiary: #27272a;
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
   
-  --accent-primary: #ff4a7a;
-  --accent-gradient: linear-gradient(135deg, #ff4a7a 0%, #ff8533 100%);
-  --accent-hover: #e03b66;
+  --accent-primary: #ff3366;
+  --accent-gradient: linear-gradient(135deg, #ff3366 0%, #ff6633 100%);
+  --accent-hover: #e11d48;
   
-  --text-primary: #f4f4f5;
-  --text-secondary: #a1a1aa;
-  --text-muted: #52525b;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
   
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-light: rgba(255, 255, 255, 0.15);
+  --border-color: rgba(15, 23, 42, 0.08);
+  --border-light: rgba(15, 23, 42, 0.15);
   
-  --glass-bg: rgba(24, 24, 27, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.06);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(15, 23, 42, 0.08);
+  --glass-shadow: 0 8px 32px 0 rgba(15, 23, 42, 0.06);
   
+  --glass-btn-bg: rgba(15, 23, 42, 0.05);
+  --glass-btn-border: rgba(15, 23, 42, 0.04);
+  --glass-btn-hover: rgba(15, 23, 42, 0.1);
+  
+  --hover-bg: rgba(15, 23, 42, 0.04);
+
   --font-heading: 'Outfit', 'Inter', system-ui, sans-serif;
   --font-body: 'Inter', system-ui, sans-serif;
   
@@ -44,8 +50,8 @@
 body {
   background-color: var(--bg-primary);
   background-image: 
-    radial-gradient(at 0% 0%, rgba(255, 74, 122, 0.05) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(255, 133, 51, 0.05) 0px, transparent 50%);
+    radial-gradient(at 0% 0%, rgba(255, 51, 102, 0.06) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(255, 102, 51, 0.06) 0px, transparent 50%);
   background-attachment: fixed;
   color: var(--text-primary);
   font-family: var(--font-body);
@@ -149,13 +155,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-glass {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--glass-btn-bg);
+  border: 1px solid var(--glass-btn-border);
   backdrop-filter: blur(10px);
 }
 
 .btn-glass:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--glass-btn-hover);
 }
 
 .btn-danger {
@@ -328,7 +334,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .dropdown-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--hover-bg);
 }
 
 .dropdown-divider {
@@ -865,7 +871,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .admin-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--hover-bg);
 }
 
 /* Settings View specific */
@@ -899,7 +905,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .settings-nav-btn:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--hover-bg);
 }
 
 .settings-nav-btn.active {
@@ -1081,7 +1087,7 @@ input:checked + .slider:before {
 }
 
 .drawer-link:hover, .drawer-link.active {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--hover-bg);
   color: var(--accent-primary);
 }
 
