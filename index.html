@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PinGrid - Premium Pinterest-style Image Gallery</title>
+    <!-- Google Fonts for Material Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Outlined&display=block" rel="stylesheet">
+    <!-- Google Identity Services client library -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  </head>
+  <body>
+    <!-- Announcement Banner -->
+    <div id="announcement-banner-wrapper" style="display: none;"></div>
+
+    <!-- Sticky Header -->
+    <div id="header-wrapper"></div>
+
+    <!-- Off-canvas Mobile Sidebar / Drawer -->
+    <div class="drawer-backdrop" id="drawer-backdrop"></div>
+    <div class="drawer glass" id="sidebar-drawer">
+      <div class="drawer-header">
+        <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-family: var(--font-heading); font-size: 1.15rem; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+          <span class="material-icons-outlined" style="-webkit-text-fill-color: initial; color: var(--accent-primary);">palette</span>
+          <span>PinGrid Menu</span>
+        </div>
+        <button id="drawer-close-btn" style="cursor: pointer; color: var(--text-secondary);">
+          <span class="material-icons-outlined">close</span>
+        </button>
+      </div>
+      <nav class="drawer-nav">
+        <a href="#home" class="drawer-link active" id="drawer-link-home">
+          <span class="material-icons-outlined">explore</span>
+          <span>Explore Gallery</span>
+        </a>
+        <a href="#profile" class="drawer-link" id="drawer-link-profile">
+          <span class="material-icons-outlined">person</span>
+          <span>My Profile</span>
+        </a>
+        <a href="#settings" class="drawer-link" id="drawer-link-settings">
+          <span class="material-icons-outlined">settings</span>
+          <span>Settings</span>
+        </a>
+        <a href="#admin" class="drawer-link" id="drawer-link-admin" style="display: none; color: var(--accent-primary);">
+          <span class="material-icons-outlined">admin_panel_settings</span>
+          <span>Admin Control</span>
+        </a>
+      </nav>
+      <div style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 16px; font-size: 0.75rem; color: var(--text-muted); text-align: center;">
+        PinGrid Serverless Site
+      </div>
+    </div>
+
+    <!-- Main View Container -->
+    <main id="view-container" style="flex: 1; min-height: 70vh;"></main>
+
+    <!-- Footer -->
+    <div id="footer-wrapper"></div>
+
+    <!-- Modals Container (Connect Storage, Upload, Create Board) -->
+    <div id="modals-wrapper"></div>
+
+    <!-- Lightbox Container (Full size viewing) -->
+    <div id="lightbox-wrapper"></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
