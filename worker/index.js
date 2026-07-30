@@ -15,7 +15,7 @@ export default {
 
     try {
       const url = new URL(request.url);
-      const path = url.pathname;
+      const path = url.pathname.replace(/\/+/g, '/'); // Collapse multiple slashes
 
       if (path === "/api/auth/google-connect" && request.method === "POST") {
         return await handleGoogleConnect(request, env);
@@ -25,7 +25,7 @@ export default {
         return await handleGoogleToken(request, env);
       }
 
-      return new Response("Not Found", { status: 404 });
+      return corsResponse(JSON.stringify({ error: "Not Found" }), 404);
     } catch (err) {
       console.error(err);
       return corsResponse(JSON.stringify({ error: err.message }), 500);

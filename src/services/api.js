@@ -1,6 +1,7 @@
 import { getIdToken } from './auth';
 
-const workerUrl = import.meta.env.VITE_WORKER_URL || 'http://localhost:8787';
+const rawWorkerUrl = import.meta.env.VITE_WORKER_URL || 'http://localhost:8787';
+const workerUrl = rawWorkerUrl.endsWith('/') ? rawWorkerUrl.slice(0, -1) : rawWorkerUrl;
 
 export const connectGoogleDrive = async (code, redirectUri) => {
   const token = await getIdToken();
