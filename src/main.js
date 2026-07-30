@@ -33,11 +33,18 @@ window.appState = {
     showCreateBoardModal(async (name, isPublic) => {
       const supabase = await getSupabase();
       const accessToken = await getGoogleDriveToken();
-      if (!accessToken) throw new Error("Google Drive storage is disconnected.");
+      const isBackupEnabled = localStorage.getItem('backup_storage_enabled') === 'true';
 
-      // 1. Create folder in Google Drive first
-      const rootFolderId = await getRootFolder(accessToken);
-      const driveFolderId = await getOrCreateBoardFolder(accessToken, rootFolderId, name);
+      if (!accessToken && !isBackupEnabled) {
+        throw new Error("Google Drive storage is disconnected. Please connect Google Drive, or enable secondary backup storage in Settings.");
+      }
+
+      let driveFolderId = 'supabase_only';
+      if (accessToken) {
+        // 1. Create folder in Google Drive first
+        const rootFolderId = await getRootFolder(accessToken);
+        driveFolderId = await getOrCreateBoardFolder(accessToken, rootFolderId, name);
+      }
 
       // 2. Insert board into Supabase
       const { data, error } = await supabase
@@ -81,21 +88,37 @@ window.appState = {
         boards,
         async (boardId, file, title, description, progressCallback) => {
           const accessToken = await getGoogleDriveToken();
-          if (!accessToken) throw new Error("Google Drive storage disconnected.");
+          const isBackupEnabled = localStorage.getItem('backup_storage_enabled') === 'true';
+          
+          if (!accessToken && !isBackupEnabled) {
+            throw new Error("No storage connected. Please connect Google Drive, or enable secondary backup storage in Settings.");
+          }
 
           // Find active board
           const activeBoard = boards.find(b => b.id === boardId);
           if (!activeBoard) throw new Error("Board not found.");
 
-          // 1. Upload to Google Drive
-          const driveFile = await uploadFileToDrive(accessToken, activeBoard.drive_folder_id, file, title, description, progressCallback);
-          
-          // 2. Set file permissions on Google Drive to public read
-          await makeFilePublic(accessToken, driveFile.id);
+          let driveFileId = 'supabase_only';
+          let driveViewLink = '';
+          let driveDownloadLink = '';
 
-          // 3. (Optional) Backup upload to Supabase Storage if enabled
+          if (accessToken) {
+            // 1. Upload to Google Drive
+            const driveFile = await uploadFileToDrive(accessToken, activeBoard.drive_folder_id, file, title, description, progressCallback);
+            
+            // 2. Set file permissions on Google Drive to public read
+            await makeFilePublic(accessToken, driveFile.id);
+            
+            driveFileId = driveFile.id;
+            driveViewLink = `https://lh3.googleusercontent.com/d/${driveFile.id}`;
+            driveDownloadLink = `https://drive.google.com/uc?export=download&id=${driveFile.id}`;
+          } else {
+            // Display static upload progress while loading onto Supabase
+            progressCallback(30);
+          }
+
+          // 3. (Optional or Mandatory if Drive is disconnected) Upload to Supabase Storage
           let supabasePath = null;
-          const isBackupEnabled = localStorage.getItem('backup_storage_enabled') === 'true';
           if (isBackupEnabled) {
             try {
               // Convent path: siteName/{firebase_uid}/{board}/{filename}
@@ -103,15 +126,25 @@ window.appState = {
               const filename = `${Date.now()}_${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${fileExt}`;
               const path = `${window.appState.siteSettings.site_name}/${window.appState.currentUser.uid}/${activeBoard.name}/${filename}`;
               
+              if (!accessToken) progressCallback(60);
+
               const { data: storageData, error: storageErr } = await supabase.storage
                 .from('gallery-backups')
                 .upload(path, file, { cacheControl: '3600', upsert: true });
 
               if (storageErr) throw storageErr;
               supabasePath = path;
+
+              // Generate public URL if this is the only storage
+              const { data: publicUrlData } = supabase.storage.from('gallery-backups').getPublicUrl(path);
+              if (!accessToken) {
+                driveViewLink = publicUrlData.publicUrl;
+                driveDownloadLink = publicUrlData.publicUrl;
+                progressCallback(100);
+              }
             } catch (backupErr) {
               console.error("Supabase Storage backup failed:", backupErr);
-              // Do not fail the entire upload if backup fails - it's secondary!
+              if (!accessToken) throw backupErr; // Crash upload only if GDrive is disconnected
             }
           }
 
@@ -123,9 +156,9 @@ window.appState = {
               board_id: boardId,
               title,
               description,
-              drive_file_id: driveFile.id,
-              drive_view_link: `https://lh3.googleusercontent.com/d/${driveFile.id}`,
-              drive_download_link: `https://drive.google.com/uc?export=download&id=${driveFile.id}`,
+              drive_file_id: driveFileId,
+              drive_view_link: driveViewLink,
+              drive_download_link: driveDownloadLink,
               supabase_storage_path: supabasePath,
               is_public: activeBoard.is_public
             });
