@@ -1,4 +1,4 @@
-import { supabasePublic } from '../services/supabase';
+import { supabasePublic, getSupabase } from '../services/supabase';
 import { renderMasonryGrid, setupGridEvents, setupInfiniteScroll } from '../components/MasonryGrid';
 import { renderPinSkeleton } from '../components/Skeleton';
 
@@ -77,10 +77,12 @@ export const HomeView = {
   fetchImages: async function() {
     this.loading = true;
     try {
-      let query = supabasePublic
+      const user = window.appState?.currentUser;
+      const supabase = user ? await getSupabase() : supabasePublic;
+
+      let query = supabase
         .from('images')
         .select('*, users(*), boards(*)')
-        .eq('is_public', true)
         .order('created_at', { ascending: false });
 
       // Apply Board filter
