@@ -32,7 +32,7 @@ export const getSupabase = async () => {
   }
 
   // Inject fresh token dynamically into the postgrest client headers
-  cachedClient.rest.headers['Authorization'] = `Bearer ${token}`;
+  cachedClient.rest.headers.set('Authorization', `Bearer ${token}`);
 
   return cachedClient;
 };
