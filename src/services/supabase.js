@@ -12,6 +12,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabasePublic = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder');
 
 let cachedClient = null;
+let cachedToken = null;
 
 // Returns a Supabase client authenticated with the current Firebase JWT
 export const getSupabase = async () => {
@@ -19,20 +20,29 @@ export const getSupabase = async () => {
   
   // If not logged in, return the public client
   if (!token) {
+    cachedClient = null;
+    cachedToken = null;
     return supabasePublic;
   }
 
-  // Create single instance if it doesn't exist
-  if (!cachedClient) {
-    cachedClient = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: false
-      }
-    });
+  // If token is unchanged, reuse the client
+  if (token === cachedToken && cachedClient) {
+    return cachedClient;
   }
 
-  // Inject fresh token dynamically into the postgrest client headers
-  cachedClient.rest.headers.set('Authorization', `Bearer ${token}`);
+  // Create a new client with the fresh Firebase JWT
+  cachedToken = token;
+  cachedClient = createClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+    auth: {
+      persistSession: false, // Turn off Supabase own session storage (Firebase is single source of truth)
+      storageKey: `foliodrive-sb-auth-${Math.random().toString(36).substring(7)}` // Silence multiple GoTrueClient warnings
+    }
+  });
 
   return cachedClient;
 };
