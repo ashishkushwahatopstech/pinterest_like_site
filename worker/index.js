@@ -69,7 +69,7 @@ async function verifyFirebaseToken(idToken, firebaseProjectId) {
   }
   
   // Fetch JWK
-  const jwkResponse = await fetch('https://www.googleapis.com/service_accounts/v1/jwk/securetoken-system@system.gserviceaccount.com');
+  const jwkResponse = await fetch('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com');
   const jwks = await jwkResponse.json();
   const jwk = jwks.keys.find(key => key.kid === header.kid);
   if (!jwk) {
