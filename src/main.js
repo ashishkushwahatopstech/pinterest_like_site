@@ -104,15 +104,39 @@ window.appState = {
           let driveDownloadLink = '';
 
           if (accessToken) {
-            // 1. Upload to Google Drive
-            const driveFile = await uploadFileToDrive(accessToken, activeBoard.drive_folder_id, file, title, description, progressCallback);
+            let driveFolderId = activeBoard.drive_folder_id;
             
-            // 2. Set file permissions on Google Drive to public read
-            await makeFilePublic(accessToken, driveFile.id);
-            
-            driveFileId = driveFile.id;
-            driveViewLink = `https://lh3.googleusercontent.com/d/${driveFile.id}`;
-            driveDownloadLink = `https://drive.google.com/uc?export=download&id=${driveFile.id}`;
+            // Auto-create board folder in Google Drive if it was created as Supabase-only
+            if (driveFolderId === 'supabase_only') {
+              try {
+                const rootFolderId = await getRootFolder(accessToken);
+                driveFolderId = await getOrCreateBoardFolder(accessToken, rootFolderId, activeBoard.name);
+                
+                // Update board record in Supabase
+                await supabase
+                  .from('boards')
+                  .update({ drive_folder_id: driveFolderId })
+                  .eq('id', activeBoard.id);
+                  
+                activeBoard.drive_folder_id = driveFolderId;
+              } catch (folderErr) {
+                console.error("Auto-creation of Google Drive folder failed:", folderErr);
+              }
+            }
+
+            if (driveFolderId !== 'supabase_only') {
+              // 1. Upload to Google Drive
+              const driveFile = await uploadFileToDrive(accessToken, driveFolderId, file, title, description, progressCallback);
+              
+              // 2. Set file permissions on Google Drive to public read
+              await makeFilePublic(accessToken, driveFile.id);
+              
+              driveFileId = driveFile.id;
+              driveViewLink = `https://lh3.googleusercontent.com/d/${driveFile.id}`;
+              driveDownloadLink = `https://drive.google.com/uc?export=download&id=${driveFile.id}`;
+            } else {
+              progressCallback(30);
+            }
           } else {
             // Display static upload progress while loading onto Supabase
             progressCallback(30);
