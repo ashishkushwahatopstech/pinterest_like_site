@@ -1779,3 +1779,64 @@ body.dark-theme .density-chip.active,
 body.dark-theme .font-chip.active {
   background: rgba(255, 74, 122, 0.08) !important;
 }
+
+/* Settings Sidebar scroll indicator gradients */
+.settings-sidebar-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+@media (max-width: 767px) {
+  .settings-sidebar-wrapper::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 28px;
+    background: linear-gradient(to right, var(--bg-primary) 20%, transparent);
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .settings-sidebar-wrapper::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 28px;
+    background: linear-gradient(to left, var(--bg-primary) 20%, transparent);
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .settings-sidebar-wrapper.show-left::before {
+    opacity: 1;
+  }
+
+  .settings-sidebar-wrapper.show-right::after {
+    opacity: 1;
+  }
+}
+
+/* Appearance responsiveness optimizations */
+@media (max-width: 480px) {
+  .theme-selection-wrapper {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .theme-selection-wrapper .appearance-card {
+    max-width: 100% !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .appearance-accent-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+}

@@ -47,25 +47,27 @@ export const SettingsView = {
         <h1 style="font-size: 2rem; font-family: var(--font-heading); margin-bottom: 24px;">Settings</h1>
 
         <div class="settings-layout">
-          <!-- Sidebar Navigation -->
-          <nav class="settings-sidebar">
-            <button class="settings-nav-btn ${this.activeSection === 'general' ? 'active' : ''}" id="settings-nav-general">
-              <span class="material-icons-outlined" style="font-size: 1.2rem; vertical-align: middle; margin-right: 8px;">person</span>
-              <span style="vertical-align: middle;">General</span>
-            </button>
-            <button class="settings-nav-btn ${this.activeSection === 'appearance' ? 'active' : ''}" id="settings-nav-appearance">
-              <span class="material-icons-outlined" style="font-size: 1.2rem; vertical-align: middle; margin-right: 8px;">palette</span>
-              <span style="vertical-align: middle;">Appearance</span>
-            </button>
-            <button class="settings-nav-btn ${this.activeSection === 'advanced' ? 'active' : ''}" id="settings-nav-advanced">
-              <span class="material-icons-outlined" style="font-size: 1.2rem; vertical-align: middle; margin-right: 8px;">settings_suggest</span>
-              <span style="vertical-align: middle;">Advanced</span>
-            </button>
-            <button class="settings-nav-btn ${this.activeSection === 'about' ? 'active' : ''}" id="settings-nav-about">
-              <span class="material-icons-outlined" style="font-size: 1.2rem; vertical-align: middle; margin-right: 8px;">info</span>
-              <span style="vertical-align: middle;">About & Support</span>
-            </button>
-          </nav>
+          <!-- Sidebar Navigation Wrapper -->
+          <div class="settings-sidebar-wrapper">
+            <nav class="settings-sidebar">
+              <button class="settings-nav-btn ${this.activeSection === 'general' ? 'active' : ''}" id="settings-nav-general">
+                <span class="material-icons-outlined" style="font-size: 1.2rem; vertical-align: middle; margin-right: 8px;">person</span>
+                <span style="vertical-align: middle;">General</span>
+              </button>
+              <button class="settings-nav-btn ${this.activeSection === 'appearance' ? 'active' : ''}" id="settings-nav-appearance">
+                <span class="material-icons-outlined" style="font-size: 1.2rem; vertical-align: middle; margin-right: 8px;">palette</span>
+                <span style="vertical-align: middle;">Appearance</span>
+              </button>
+              <button class="settings-nav-btn ${this.activeSection === 'advanced' ? 'active' : ''}" id="settings-nav-advanced">
+                <span class="material-icons-outlined" style="font-size: 1.2rem; vertical-align: middle; margin-right: 8px;">settings_suggest</span>
+                <span style="vertical-align: middle;">Advanced</span>
+              </button>
+              <button class="settings-nav-btn ${this.activeSection === 'about' ? 'active' : ''}" id="settings-nav-about">
+                <span class="material-icons-outlined" style="font-size: 1.2rem; vertical-align: middle; margin-right: 8px;">info</span>
+                <span style="vertical-align: middle;">About & Support</span>
+              </button>
+            </nav>
+          </div>
 
           <!-- Content Panel -->
           <div class="settings-content glass">
@@ -144,7 +146,7 @@ export const SettingsView = {
       <!-- Theme Mode -->
       <div style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 24px;">
         <h3 style="font-size: 1rem; margin-bottom: 12px; font-weight: 600; color: var(--text-primary); font-family: var(--font-heading);">Interface Theme</h3>
-        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <div class="theme-selection-wrapper" style="display: flex; gap: 12px; flex-wrap: wrap;">
           <div class="appearance-card ${!isDark ? 'selected' : ''}" id="theme-light-card" style="flex: 1; min-width: 140px; max-width: 200px; padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); cursor: pointer; text-align: center; background: rgba(255,255,255,0.02); transition: var(--transition-fast);">
             <span class="material-icons-outlined" style="font-size: 2.2rem; color: #ff9f43;">light_mode</span>
             <div style="font-weight: 600; font-size: 0.85rem; margin-top: 8px; color: var(--text-primary);">Light Mode</div>
@@ -159,7 +161,7 @@ export const SettingsView = {
       <!-- Custom Accent Colors -->
       <div style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 24px;">
         <h3 style="font-size: 1rem; margin-bottom: 12px; font-weight: 600; color: var(--text-primary); font-family: var(--font-heading);">Accent Theme Color</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; max-width: 600px;">
+        <div class="appearance-accent-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; max-width: 600px; width: 100%;">
           <!-- Classic Pink -->
           <div class="accent-color-card ${activeAccent === 'classic' ? 'selected' : ''}" data-accent="classic" style="padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); cursor: pointer; display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.02);">
             <div style="width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, #ff3366 0%, #ff6b35 100%);"></div>
@@ -313,6 +315,33 @@ export const SettingsView = {
   },
 
   setupEvents: function() {
+    // Nav buttons scroll indicators (Mobile horizontal swipe indicator)
+    const sidebar = document.querySelector('.settings-sidebar');
+    const sidebarWrapper = document.querySelector('.settings-sidebar-wrapper');
+    if (sidebar && sidebarWrapper) {
+      const updateIndicators = () => {
+        const scrollLeft = sidebar.scrollLeft;
+        const maxScroll = sidebar.scrollWidth - sidebar.clientWidth;
+        
+        if (scrollLeft > 5) {
+          sidebarWrapper.classList.add('show-left');
+        } else {
+          sidebarWrapper.classList.remove('show-left');
+        }
+        
+        if (scrollLeft < maxScroll - 5 && maxScroll > 5) {
+          sidebarWrapper.classList.add('show-right');
+        } else {
+          sidebarWrapper.classList.remove('show-right');
+        }
+      };
+
+      sidebar.addEventListener('scroll', updateIndicators);
+      // Wait for layout calculation to run initial check
+      setTimeout(updateIndicators, 100);
+      window.addEventListener('resize', updateIndicators);
+    }
+
     // Nav buttons
     const navGeneral = document.getElementById('settings-nav-general');
     const navAppearance = document.getElementById('settings-nav-appearance');
