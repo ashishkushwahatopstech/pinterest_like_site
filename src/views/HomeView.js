@@ -495,10 +495,10 @@ export const HomeView = {
       setupGridEvents(
         gridEl,
         (pinId) => {
-          const currentPath = window.location.pathname;
-          const currentSearch = window.location.search;
-          const connector = currentSearch.includes('?') ? '&' : '?';
-          window.appState.navigate(`${currentPath}${currentSearch}${connector}pin=${pinId}`);
+          const imgObj = this.images.find(img => img.id === pinId);
+          const slug = imgObj ? window.appState.slugify(imgObj.title) : 'pin';
+          sessionStorage.setItem('lightbox_referrer', window.location.pathname + window.location.search);
+          window.appState.navigate(`/pin/${slug}--${pinId}`);
         },
         async (pinId, likeBtn) => {
           if (window.appState && window.appState.toggleLike) {

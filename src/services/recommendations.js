@@ -1,37 +1,11 @@
 // --- CLIENT-SIDE BEHAVIOR MODELING & RECOMMENDATION ENGINE ---
 
-const COOKIE_NAME = 'pingrid_interests';
-const MAX_KEYWORDS = 50; // Cap to keep cookie size small
+const STORAGE_KEY = 'pingrid_interests';
+const MAX_KEYWORDS = 20; // Cap to keep storage tiny and focused
 
 const STOP_WORDS = new Set([
   'the', 'a', 'and', 'is', 'of', 'in', 'to', 'for', 'with', 'on', 'at', 'by', 'an', 'this', 'that', 'from', 'it', 'my', 'your', 'our', 'their', 'or', 'as', 'are', 'was', 'were', 'be', 'been', 'has', 'have', 'had', 'do', 'does', 'did', 'but', 'not'
 ]);
-
-// Helper to set cookie
-const setCookie = (name, value, days = 30) => {
-  const date = new Date();
-  date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-  const expires = "; expires=" + date.toUTCString();
-  document.cookie = name + "=" + encodeURIComponent(JSON.stringify(value)) + expires + "; path=/; SameSite=Lax";
-};
-
-// Helper to get cookie
-const getCookie = (name) => {
-  const nameEQ = name + "=";
-  const ca = document.cookie.split(';');
-  for(let i = 0; i < ca.length; i++) {
-    let c = ca[i];
-    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-    if (c.indexOf(nameEQ) === 0) {
-      try {
-        return JSON.parse(decodeURIComponent(c.substring(nameEQ.length, c.length)));
-      } catch (e) {
-        return null;
-      }
-    }
-  }
-  return null;
-};
 
 // Extract relevant keywords from text
 export const extractKeywords = (text) => {
@@ -45,7 +19,12 @@ export const extractKeywords = (text) => {
 
 // Retrieve user interest weights
 export const getUserInterests = () => {
-  return getCookie(COOKIE_NAME) || {};
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
 };
 
 // Add weights to keywords, capping the list and decaying older interests slightly
@@ -63,7 +42,7 @@ const updateInterests = (keywords, weight) => {
     interests[kw] = (interests[kw] || 0) + weight;
   });
 
-  // Sort and keep top N keywords to avoid bloated cookies
+  // Sort and keep top N keywords to avoid bloated data
   const sorted = Object.entries(interests)
     .sort((a, b) => b[1] - a[1])
     .slice(0, MAX_KEYWORDS);
@@ -75,7 +54,11 @@ const updateInterests = (keywords, weight) => {
     }
   });
 
-  setCookie(COOKIE_NAME, newInterests);
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newInterests));
+  } catch (e) {
+    console.error("Failed to write user interests to localStorage:", e);
+  }
 };
 
 // --- PUBLIC TRACKING HOOKS ---

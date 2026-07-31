@@ -431,6 +431,23 @@ const openLightboxOverlay = async (imageId) => {
 
         if (error) throw error;
         alert(`Image visibility updated.`);
+      },
+      onSave: async (imgId, newTitle, newDesc) => {
+        const supabase = await getSupabase();
+        const { error } = await supabase
+          .from('images')
+          .update({ title: newTitle, description: newDesc })
+          .eq('id', imgId);
+          
+        if (error) throw error;
+        
+        // Update URL to match new title slug!
+        const cleanTitle = window.appState.slugify(newTitle);
+        window.history.replaceState({}, '', `/pin/${cleanTitle}--${imgId}`);
+        
+        // Update background card UI titles
+        const cardTitleEl = document.querySelector(`.pin-card[data-id="${imgId}"] h4, [data-id="${imgId}"] .pin-bottom-info h4`);
+        if (cardTitleEl) cardTitleEl.textContent = newTitle;
       }
     });
 
@@ -485,12 +502,9 @@ const openLightboxOverlay = async (imageId) => {
               setupGridEvents(
                 relatedGridEl,
                 (pinId) => {
-                  // Smoothly switch to the newly clicked image inside the open lightbox
-                  const currentPath = window.location.pathname;
-                  const currentSearch = window.location.search;
-                  const params = new URLSearchParams(currentSearch);
-                  params.set('pin', pinId);
-                  window.appState.navigate(`${currentPath}?${params.toString()}`);
+                  const imgObj = relatedImages.find(img => img.id === pinId);
+                  const slug = imgObj ? window.appState.slugify(imgObj.title) : 'pin';
+                  window.appState.navigate(`/pin/${slug}--${pinId}`);
 
                   // Scroll to top of the lightbox modal cleanly
                   const modal = document.getElementById('lightbox-modal');
@@ -637,6 +651,17 @@ const updateSEOMetadata = (title, description) => {
   }
   ogDesc.content = description;
 };
+// --- SEO-FRIENDLY URL SLUG GENERATOR ---
+const slugify = (text) => {
+  if (!text) return 'untitled';
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // remove non-alphanumeric, hyphens, and spaces
+    .replace(/\s+/g, '-')     // replace spaces with single hyphens
+    .replace(/-+/g, '-')      // replace multiple hyphens with single hyphen
+    .trim();
+};
+window.appState.slugify = slugify;
 window.appState.updateSEO = updateSEOMetadata;
 
 async function route() {
@@ -644,6 +669,16 @@ async function route() {
   
   // Close drawer nav
   updateDrawerNav(path);
+
+  // Extract ID from slugified URL structures (e.g. /pin/title--UUID or /board/name--UUID)
+  let activePinId = query.pin || null;
+
+  if (path.startsWith('pin/')) {
+    const pinSlug = path.split('/')[1];
+    if (pinSlug && pinSlug.includes('--')) {
+      activePinId = pinSlug.split('--')[1];
+    }
+  }
 
   // Re-render header to reflect the active page and route state
   const headerWrapper = document.getElementById('header-wrapper');
@@ -674,13 +709,14 @@ async function route() {
   }
 
   // Router views
-  if (path.startsWith('home') || path === '') {
+  if (path.startsWith('home') || path === '' || path.startsWith('pin/')) {
     if (query.q) {
       trackUserSearch(query.q);
     }
     await HomeView.render({ boardId: query.boardId, q: query.q });
   } else if (path.startsWith('board/')) {
-    const boardId = path.split('/')[1];
+    const boardSlug = path.split('/')[1];
+    const boardId = boardSlug.includes('--') ? boardSlug.split('--')[1] : boardSlug;
     await BoardView.render({ id: boardId });
   } else if (path === 'profile') {
     await ProfileView.render();
@@ -693,8 +729,8 @@ async function route() {
   }
 
   // Handle lightbox detail parameter
-  if (query.pin) {
-    await openLightboxOverlay(query.pin);
+  if (activePinId) {
+    await openLightboxOverlay(activePinId);
   } else {
     const wrapper = document.getElementById('lightbox-wrapper');
     if (wrapper) wrapper.innerHTML = '';
