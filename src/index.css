@@ -1695,8 +1695,7 @@ body.dark-theme .drawer {
 
 /* Mobile view header hides for user profiles (moved inside offcanvas sidebar) */
 @media (max-width: 767px) {
-  .header-container #user-menu-container,
-  .header-container #login-btn {
+  .header-container #user-menu-container {
     display: none !important;
   }
 }
