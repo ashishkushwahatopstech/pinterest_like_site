@@ -255,7 +255,15 @@ export const HomeView = {
         if (this.page === 0) {
           this.images = sortRecommendedFeed(fetchedData);
         } else {
-          this.images = [...this.images, ...fetchedData];
+          // Merge new images and deduplicate by ID
+          const combined = [...this.images, ...fetchedData];
+          const uniqueMap = new Map();
+          combined.forEach(img => {
+            if (!uniqueMap.has(img.id)) {
+              uniqueMap.set(img.id, img);
+            }
+          });
+          this.images = Array.from(uniqueMap.values());
         }
         this.hasMore = data.length === PAGE_SIZE;
       }
