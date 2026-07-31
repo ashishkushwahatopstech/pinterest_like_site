@@ -184,52 +184,65 @@ export const HomeView = {
     const filterContainer = document.getElementById('board-filters');
     if (!filterContainer) return;
 
-    // Convert filterContainer style to a modern wrap layout
-    filterContainer.style.display = 'flex';
-    filterContainer.style.gap = '16px';
-    filterContainer.style.flexWrap = 'wrap';
-    filterContainer.style.overflowX = 'visible';
-    filterContainer.style.paddingBottom = '0';
+    filterContainer.style.display = 'block';
     filterContainer.style.marginBottom = '32px';
 
     filterContainer.innerHTML = `
-      <div style="display: flex; gap: 16px; flex-wrap: wrap; width: 100%; align-items: center;">
-        <!-- In-View Search Input -->
-        <div class="search-bar" style="position: relative; flex: 1; min-width: 240px; margin-right: auto; max-width: 400px; display: block; visibility: visible;">
-          <span class="material-icons-outlined" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); pointer-events: none;">search</span>
-          <input type="text" id="home-search-input" placeholder="Search titles, descriptions..." style="width: 100%; padding: 12px 16px 12px 42px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.95rem; font-family: var(--font-body); transition: var(--transition-fast);" value="${this.searchQuery || ''}">
+      <div class="filter-panel-wrapper">
+        <div class="filter-search-row">
+          <!-- In-View Search Input -->
+          <div class="search-bar home-search-bar">
+            <span class="material-icons-outlined" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); pointer-events: none;">search</span>
+            <input type="text" id="home-search-input" placeholder="Search titles, descriptions..." value="${this.searchQuery || ''}">
+          </div>
+
+          <!-- Toggle Filters Button -->
+          <button id="mobile-filter-toggle-btn" class="btn btn-glass" style="padding: 12px 16px; border-radius: var(--radius-md); display: flex; align-items: center; gap: 8px;">
+            <span class="material-icons-outlined">tune</span>
+            <span class="btn-text-responsive">Filters</span>
+          </button>
         </div>
 
-        <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <!-- Collapsible Selectors Wrapper -->
+        <div id="collapsible-filters" class="collapsible-filters-pane">
           <!-- Board Select -->
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Collection</span>
-            <select id="home-board-select" class="btn btn-glass" style="padding: 10px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.85rem; font-weight: 500; cursor: pointer; outline: none;">
-              <option value="">All Collections</option>
-              ${this.boards.map(b => `<option value="${b.id}" ${this.selectedBoardId === b.id ? 'selected' : ''}>${b.name}</option>`).join('')}
-            </select>
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 180px;">
+            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; min-width: 65px;">Collection</span>
+            <div class="custom-select-wrapper">
+              <select id="home-board-select" class="custom-select">
+                <option value="">All Collections</option>
+                ${this.boards.map(b => `<option value="${b.id}" ${this.selectedBoardId === b.id ? 'selected' : ''}>${b.name}</option>`).join('')}
+              </select>
+              <span class="material-icons-outlined select-arrow">expand_more</span>
+            </div>
           </div>
 
           <!-- Date Select -->
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Added</span>
-            <select id="home-date-select" class="btn btn-glass" style="padding: 10px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.85rem; font-weight: 500; cursor: pointer; outline: none;">
-              <option value="all" ${this.selectedDateFilter === 'all' ? 'selected' : ''}>All Time</option>
-              <option value="day" ${this.selectedDateFilter === 'day' ? 'selected' : ''}>Last 24 Hours</option>
-              <option value="week" ${this.selectedDateFilter === 'week' ? 'selected' : ''}>Past Week</option>
-              <option value="month" ${this.selectedDateFilter === 'month' ? 'selected' : ''}>Past Month</option>
-            </select>
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 180px;">
+            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; min-width: 65px;">Added</span>
+            <div class="custom-select-wrapper">
+              <select id="home-date-select" class="custom-select">
+                <option value="all" ${this.selectedDateFilter === 'all' ? 'selected' : ''}>All Time</option>
+                <option value="day" ${this.selectedDateFilter === 'day' ? 'selected' : ''}>Last 24 Hours</option>
+                <option value="week" ${this.selectedDateFilter === 'week' ? 'selected' : ''}>Past Week</option>
+                <option value="month" ${this.selectedDateFilter === 'month' ? 'selected' : ''}>Past Month</option>
+              </select>
+              <span class="material-icons-outlined select-arrow">expand_more</span>
+            </div>
           </div>
 
           <!-- Shape/Orientation Select -->
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Shape</span>
-            <select id="home-shape-select" class="btn btn-glass" style="padding: 10px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.85rem; font-weight: 500; cursor: pointer; outline: none;">
-              <option value="all" ${this.selectedShapeFilter === 'all' ? 'selected' : ''}>All Shapes</option>
-              <option value="portrait" ${this.selectedShapeFilter === 'portrait' ? 'selected' : ''}>Portrait</option>
-              <option value="landscape" ${this.selectedShapeFilter === 'landscape' ? 'selected' : ''}>Landscape</option>
-              <option value="square" ${this.selectedShapeFilter === 'square' ? 'selected' : ''}>Square</option>
-            </select>
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 180px;">
+            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; min-width: 65px;">Shape</span>
+            <div class="custom-select-wrapper">
+              <select id="home-shape-select" class="custom-select">
+                <option value="all" ${this.selectedShapeFilter === 'all' ? 'selected' : ''}>All Shapes</option>
+                <option value="portrait" ${this.selectedShapeFilter === 'portrait' ? 'selected' : ''}>Portrait</option>
+                <option value="landscape" ${this.selectedShapeFilter === 'landscape' ? 'selected' : ''}>Landscape</option>
+                <option value="square" ${this.selectedShapeFilter === 'square' ? 'selected' : ''}>Square</option>
+              </select>
+              <span class="material-icons-outlined select-arrow">expand_more</span>
+            </div>
           </div>
         </div>
       </div>
@@ -240,6 +253,29 @@ export const HomeView = {
     const boardSel = document.getElementById('home-board-select');
     const dateSel = document.getElementById('home-date-select');
     const shapeSel = document.getElementById('home-shape-select');
+    
+    // Toggle Mobile Filters Drawer
+    const toggleBtn = document.getElementById('mobile-filter-toggle-btn');
+    const collapsiblePane = document.getElementById('collapsible-filters');
+    
+    if (toggleBtn && collapsiblePane) {
+      const isMobilePaneOpened = sessionStorage.getItem('mobile_filters_pane_opened') === 'true';
+      if (isMobilePaneOpened) {
+        collapsiblePane.classList.add('show-mobile-filters');
+        toggleBtn.classList.add('btn-primary');
+      }
+
+      toggleBtn.addEventListener('click', () => {
+        collapsiblePane.classList.toggle('show-mobile-filters');
+        const isShown = collapsiblePane.classList.contains('show-mobile-filters');
+        sessionStorage.setItem('mobile_filters_pane_opened', isShown ? 'true' : 'false');
+        if (isShown) {
+          toggleBtn.classList.add('btn-primary');
+        } else {
+          toggleBtn.classList.remove('btn-primary');
+        }
+      });
+    }
 
     const handleFilterChange = async () => {
       this.searchQuery = searchInp ? searchInp.value.trim() : '';
@@ -247,7 +283,6 @@ export const HomeView = {
       this.selectedDateFilter = dateSel ? dateSel.value : 'all';
       this.selectedShapeFilter = shapeSel ? shapeSel.value : 'all';
       
-      // Update URL parameters
       const params = new URLSearchParams();
       if (this.searchQuery) params.set('q', this.searchQuery);
       if (this.selectedBoardId) params.set('boardId', this.selectedBoardId);
@@ -257,7 +292,6 @@ export const HomeView = {
       const searchStr = params.toString();
       window.history.replaceState({}, '', '/' + (searchStr ? '?' + searchStr : ''));
 
-      // Reload grid data
       this.images = [];
       this.page = 0;
       this.hasMore = false;
