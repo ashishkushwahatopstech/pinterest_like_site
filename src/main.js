@@ -1,7 +1,46 @@
-// Apply persisted theme immediately to avoid page load flashing
-if (localStorage.getItem('theme_dark') === 'true') {
-  document.body.classList.add('dark-theme');
-}
+// Apply persisted appearance immediately to avoid page load flashing
+const applyAppearanceOnBoot = () => {
+  const isDark = localStorage.getItem('theme_dark') === 'true';
+  document.body.classList.toggle('dark-theme', isDark);
+
+  const accent = localStorage.getItem('appearance_accent') || 'classic';
+  const root = document.documentElement;
+  if (accent === 'classic') {
+    root.style.setProperty('--accent-primary', '#ff3366');
+    root.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #ff3366 0%, #ff6b35 100%)');
+  } else if (accent === 'blue') {
+    root.style.setProperty('--accent-primary', '#0055ff');
+    root.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #0055ff 0%, #00d5ff 100%)');
+  } else if (accent === 'emerald') {
+    root.style.setProperty('--accent-primary', '#10b981');
+    root.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #059669 0%, #34d399 100%)');
+  } else if (accent === 'purple') {
+    root.style.setProperty('--accent-primary', '#8b5cf6');
+    root.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #7c3aed 0%, #c084fc 100%)');
+  }
+
+  const density = localStorage.getItem('appearance_density') || 'normal';
+  if (density === 'compact') {
+    root.style.setProperty('--grid-gap', '8px');
+  } else if (density === 'spacious') {
+    root.style.setProperty('--grid-gap', '24px');
+  } else {
+    root.style.setProperty('--grid-gap', '16px');
+  }
+
+  const font = localStorage.getItem('appearance_font') || 'outfit';
+  if (font === 'inter') {
+    root.style.setProperty('--font-heading', "'Inter', sans-serif");
+    root.style.setProperty('--font-body', "'Inter', sans-serif");
+  } else if (font === 'playfair') {
+    root.style.setProperty('--font-heading', "'Playfair Display', serif");
+    root.style.setProperty('--font-body', "'Playfair Display', serif");
+  } else {
+    root.style.setProperty('--font-heading', "'Outfit', sans-serif");
+    root.style.setProperty('--font-body', "'Outfit', sans-serif");
+  }
+};
+applyAppearanceOnBoot();
 
 import './index.css';
 import { subscribeToAuth, loginWithGoogle, logout } from './services/auth';
@@ -35,6 +74,7 @@ window.appState = {
     announcement: ''
   },
   googleCodeClient: null,
+  applyCustomAppearance: applyAppearanceOnBoot,
   
   navigate: (path, replace = false) => {
     if (replace) {
@@ -591,7 +631,7 @@ const setupDrawerNav = () => {
 
   // Drawer links closing behavior
   drawer?.querySelectorAll('.drawer-link').forEach(link => {
-    link.addEventListener('click', closeDrawer);
+    link.onclick = closeDrawer;
   });
 };
 
@@ -608,6 +648,110 @@ const updateDrawerNav = (activePath) => {
 
   const activeLink = document.getElementById(activeId);
   if (activeLink) activeLink.classList.add('active');
+};
+
+const updateDrawerHTML = (user, isAdmin) => {
+  const drawer = document.getElementById('sidebar-drawer');
+  if (!drawer) return;
+
+  drawer.innerHTML = `
+    <div class="drawer-header" style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-family: var(--font-heading); font-size: 1.15rem; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+        <span class="material-icons-outlined" style="-webkit-text-fill-color: initial; color: var(--accent-primary);">palette</span>
+        <span>PinGrid Menu</span>
+      </div>
+      <button id="drawer-close-btn" style="cursor: pointer; color: var(--text-secondary); background: none; border: none;">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- Mobile User Card (Only shown inside drawer on mobile) -->
+    ${user ? `
+      <div class="mobile-drawer-profile" style="padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.02);">
+        <img src="${user.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color);">
+        <div style="overflow: hidden;">
+          <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${user.displayName || 'Creator'}</div>
+          <div style="font-size: 0.75rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;">${user.email}</div>
+        </div>
+      </div>
+    ` : `
+      <div style="padding: 20px; border-bottom: 1px solid var(--border-color);">
+        <button id="drawer-login-btn" class="btn btn-primary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span class="material-icons-outlined">login</span>
+          <span>Sign In with Google</span>
+        </button>
+      </div>
+    `}
+
+    <nav class="drawer-nav" style="padding: 16px 12px; display: flex; flex-direction: column; gap: 4px;">
+      <a href="/" class="drawer-link" id="drawer-link-home" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--radius-sm); font-weight: 500; font-size: 0.9rem; color: var(--text-primary); transition: background 0.2s;">
+        <span class="material-icons-outlined">explore</span>
+        <span>Explore Gallery</span>
+      </a>
+      ${user ? `
+        <a href="/profile" class="drawer-link" id="drawer-link-profile" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--radius-sm); font-weight: 500; font-size: 0.9rem; color: var(--text-primary); transition: background 0.2s;">
+          <span class="material-icons-outlined">person</span>
+          <span>My Profile</span>
+        </a>
+        <a href="/settings" class="drawer-link" id="drawer-link-settings" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--radius-sm); font-weight: 500; font-size: 0.9rem; color: var(--text-primary); transition: background 0.2s;">
+          <span class="material-icons-outlined">settings</span>
+          <span>Settings</span>
+        </a>
+        ${isAdmin ? `
+          <a href="/admin" class="drawer-link" id="drawer-link-admin" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--radius-sm); font-weight: 500; font-size: 0.9rem; color: var(--accent-primary); transition: background 0.2s;">
+            <span class="material-icons-outlined">admin_panel_settings</span>
+            <span>Admin Panel</span>
+          </a>
+        ` : ''}
+      ` : ''}
+    </nav>
+
+    ${user ? `
+      <div style="margin-top: auto; padding: 16px 12px; border-top: 1px solid var(--border-color);">
+        <button id="drawer-logout-btn" class="btn btn-secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; color: #f87171; border-color: rgba(248,113,113,0.2); cursor: pointer;">
+          <span class="material-icons-outlined">logout</span>
+          <span>Sign Out</span>
+        </button>
+      </div>
+    ` : `
+      <div style="margin-top: auto; padding: 16px 20px; font-size: 0.75rem; color: var(--text-muted); text-align: center; border-top: 1px solid var(--border-color);">
+        PinGrid Serverless Site
+      </div>
+    `}
+  `;
+
+  // Bind events
+  setupDrawerNav();
+
+  // Bind logout click
+  const drawerLogout = document.getElementById('drawer-logout-btn');
+  if (drawerLogout) {
+    drawerLogout.onclick = async () => {
+      try {
+        const closeBtn = document.getElementById('drawer-close-btn');
+        if (closeBtn) closeBtn.click();
+        await logout();
+      } catch (err) {
+        alert("Logout failed: " + err.message);
+      }
+    };
+  }
+
+  // Bind login click
+  const drawerLogin = document.getElementById('drawer-login-btn');
+  if (drawerLogin) {
+    drawerLogin.onclick = async () => {
+      try {
+        const closeBtn = document.getElementById('drawer-close-btn');
+        if (closeBtn) closeBtn.click();
+        await loginWithGoogle();
+      } catch (err) {
+        console.error("Login error:", err);
+      }
+    };
+  }
+
+  updateDrawerNav(parseUrl().path);
 };
 
 // --- APPLICATION ROUTING ENGINES ---
@@ -754,6 +898,9 @@ const initApp = async () => {
   // 1. Load settings and banner first
   await loadBrandingSettings();
 
+  // 1b. Apply appearance customization before paint to avoid flashes!
+  window.appState.applyCustomAppearance();
+
   // 2. Setup drawer events
   setupDrawerNav();
 
@@ -761,6 +908,7 @@ const initApp = async () => {
   subscribeToAuth(async (user) => {
     window.appState.currentUser = user;
     window.appState.isAdmin = false;
+    updateDrawerHTML(user, false);
 
     // Show header in loading state
     const headerWrapper = document.getElementById('header-wrapper');
@@ -797,15 +945,11 @@ const initApp = async () => {
         }
 
         window.appState.isAdmin = data?.[0]?.is_admin || false;
+        updateDrawerHTML(user, window.appState.isAdmin);
 
         // Update header and mobile menu with admin visibility
         if (headerWrapper) {
           headerWrapper.innerHTML = renderHeader(user, window.appState.isAdmin, parseUrl().path);
-        }
-        
-        const adminLink = document.getElementById('drawer-link-admin');
-        if (adminLink) {
-          adminLink.style.display = window.appState.isAdmin ? 'flex' : 'none';
         }
 
         // Check Google Drive storage connection
@@ -829,8 +973,11 @@ const initApp = async () => {
         console.error("Signup gating failed:", err);
         alert(err.message || "Failed to register profile. Signups may be closed by the site administrator.");
         await logout();
+        updateDrawerHTML(null, false);
         return;
       }
+    } else {
+      updateDrawerHTML(null, false);
     }
 
     // Bind header events (search triggers, avatar toggles)

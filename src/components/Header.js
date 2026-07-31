@@ -31,10 +31,6 @@ export const renderHeader = (user, isAdmin, currentRoute) => {
 
         <!-- Action Buttons / User Menu -->
         <div class="nav-actions" style="display: flex; align-items: center; gap: 12px;">
-          <!-- Theme Switcher Toggle -->
-          <button id="theme-toggle-btn" class="btn btn-icon btn-glass" style="border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer;" aria-label="Toggle Theme">
-            <span class="material-icons-outlined" id="theme-toggle-icon">dark_mode</span>
-          </button>
 
           ${user ? `
             <div class="custom-dropdown create-dropdown-container" style="position: relative; display: inline-block;">
