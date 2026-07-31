@@ -29,6 +29,9 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
         <div class="lightbox-main-card glass animate-fade">
           <div class="lightbox-content-wrapper">
             <img class="lightbox-image" src="${imageUrl}" alt="${img.title}">
+            <button class="btn btn-glass" id="lightbox-fullscreen-exit-btn" style="position: absolute; top: 16px; right: 16px; border-radius: 50%; width: 44px; height: 44px; display: none; align-items: center; justify-content: center; z-index: 500; cursor: pointer; border: 1px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.5); color: #ffffff;" aria-label="Exit Fullscreen">
+              <span class="material-icons-outlined" style="font-size: 1.5rem;">fullscreen_exit</span>
+            </button>
           </div>
           
           <div class="lightbox-details animate-slide-up" style="background: var(--bg-secondary); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; border-left: 1px solid var(--border-color); padding: 32px; box-shadow: var(--shadow-md); display: flex; flex-direction: column; justify-content: space-between; overflow-y: auto;">
@@ -241,6 +244,18 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
         }
       }
     });
+
+    const exitOverlayBtn = document.getElementById('lightbox-fullscreen-exit-btn');
+    if (exitOverlayBtn) {
+      exitOverlayBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      };
+    }
   }
 
   // Mobile collapsible title triggers
