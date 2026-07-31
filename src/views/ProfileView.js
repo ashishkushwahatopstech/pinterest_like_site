@@ -52,6 +52,7 @@ export const ProfileView = {
       const { data, error } = await supabase
         .from('boards')
         .select('*')
+        .eq('user_id', window.appState.currentUser.uid)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -67,6 +68,7 @@ export const ProfileView = {
       const { data, error } = await supabase
         .from('likes')
         .select('*, images(*, users(*), boards(*))')
+        .eq('user_id', window.appState.currentUser.uid)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

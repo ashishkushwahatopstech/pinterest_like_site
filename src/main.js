@@ -505,6 +505,34 @@ const route = async () => {
   // Close drawer nav
   updateDrawerNav(path);
 
+  // Re-render header to reflect the active page and route state
+  const headerWrapper = document.getElementById('header-wrapper');
+  if (headerWrapper) {
+    headerWrapper.innerHTML = renderHeader(window.appState.currentUser, window.appState.isAdmin, path);
+    setupHeaderEvents(window.appState.currentUser, (searchQuery) => {
+      HomeView.handleGlobalSearch(searchQuery);
+    });
+    
+    // Re-bind header upload click
+    const uploadBtn = document.getElementById('header-upload-btn');
+    if (uploadBtn) {
+      uploadBtn.onclick = () => {
+        window.appState.showUpload();
+      };
+    }
+    // Re-bind header sign in button
+    const loginBtn = document.getElementById('login-btn');
+    if (loginBtn) {
+      loginBtn.onclick = async () => {
+        try {
+          await loginWithGoogle();
+        } catch (err) {
+          console.error("Google Authentication error:", err);
+        }
+      };
+    }
+  }
+
   // Router views
   if (path.startsWith('home') || path === '') {
     await HomeView.render({ boardId: query.boardId, q: query.q });

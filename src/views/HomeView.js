@@ -61,12 +61,17 @@ export const HomeView = {
 
   fetchPublicBoards: async function() {
     try {
-      const { data, error } = await supabasePublic
+      let query = supabasePublic
         .from('boards')
         .select('id, name')
         .eq('is_public', true)
         .order('name');
         
+      if (this.searchQuery) {
+        query = query.ilike('name', `%${this.searchQuery}%`);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       this.boards = data || [];
     } catch (err) {
