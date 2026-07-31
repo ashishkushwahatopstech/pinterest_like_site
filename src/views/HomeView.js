@@ -10,24 +10,30 @@ export const HomeView = {
   boards: [],
   selectedBoardId: null,
   searchQuery: '',
+  selectedDateFilter: 'all', // 'all' | 'day' | 'week' | 'month'
+  selectedShapeFilter: 'all', // 'all' | 'portrait' | 'landscape' | 'square'
   page: 0,
   hasMore: false,
   loading: false,
 
   render: async function(params = {}) {
-    // Reset state
+    // Read state from URL search parameters (for sharing/deep-linking)
+    const urlParams = new URLSearchParams(window.location.search);
+    
     this.images = [];
     this.boards = [];
     this.page = 0;
     this.hasMore = false;
     this.loading = true;
-    this.selectedBoardId = params.boardId || null;
-    this.searchQuery = params.q || '';
+    this.selectedBoardId = urlParams.get('boardId') || null;
+    this.searchQuery = urlParams.get('q') || '';
+    this.selectedDateFilter = urlParams.get('date') || 'all';
+    this.selectedShapeFilter = urlParams.get('shape') || 'all';
 
     const container = document.getElementById(this.containerId);
     if (!container) return;
 
-    // Render skeleton initially
+    // Render header title and initial layout
     container.innerHTML = `
       <section class="hero animate-fade">
         <h1 id="home-title">Discover Creative Ideas</h1>
@@ -35,11 +41,13 @@ export const HomeView = {
       </section>
       
       <div class="container">
-        <!-- Board Filter Pills -->
-        <div id="board-filters" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 24px; scrollbar-width: none;">
-          <div class="skeleton" style="width: 80px; height: 35px; border-radius: var(--radius-full);"></div>
-          <div class="skeleton" style="width: 100px; height: 35px; border-radius: var(--radius-full);"></div>
-          <div class="skeleton" style="width: 90px; height: 35px; border-radius: var(--radius-full);"></div>
+        <!-- Interactive Filter Panel -->
+        <div id="board-filters">
+          <div style="display: flex; gap: 16px; flex-wrap: wrap; width: 100%; align-items: center; margin-bottom: 32px;">
+            <div class="skeleton" style="width: 250px; height: 40px; border-radius: var(--radius-md);"></div>
+            <div class="skeleton" style="width: 120px; height: 40px; border-radius: var(--radius-md);"></div>
+            <div class="skeleton" style="width: 120px; height: 40px; border-radius: var(--radius-md);"></div>
+          </div>
         </div>
 
         <!-- Masonry Grid with Skeleton -->
@@ -61,17 +69,12 @@ export const HomeView = {
 
   fetchPublicBoards: async function() {
     try {
-      let query = supabasePublic
+      const { data, error } = await supabasePublic
         .from('boards')
         .select('id, name')
         .eq('is_public', true)
         .order('name');
         
-      if (this.searchQuery) {
-        query = query.ilike('name', `%${this.searchQuery}%`);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
       this.boards = data || [];
     } catch (err) {
@@ -100,6 +103,15 @@ export const HomeView = {
         query = query.or(`title.ilike.%${this.searchQuery}%,description.ilike.%${this.searchQuery}%`);
       }
 
+      // Apply Date filter (SQL level)
+      if (this.selectedDateFilter && this.selectedDateFilter !== 'all') {
+        let days = 1;
+        if (this.selectedDateFilter === 'week') days = 7;
+        else if (this.selectedDateFilter === 'month') days = 30;
+        const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+        query = query.gte('created_at', cutoffDate);
+      }
+
       // Pagination bounds
       const from = this.page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
@@ -109,7 +121,12 @@ export const HomeView = {
       if (error) throw error;
 
       if (data) {
-        this.images = [...this.images, ...data];
+        let fetchedData = data || [];
+        // Apply Shape/Orientation filter client-side by pre-resolving aspects
+        if (this.selectedShapeFilter && this.selectedShapeFilter !== 'all') {
+          fetchedData = await this.filterImagesByShape(fetchedData, this.selectedShapeFilter);
+        }
+        this.images = [...this.images, ...fetchedData];
         this.hasMore = data.length === PAGE_SIZE;
       }
     } catch (err) {
@@ -117,6 +134,28 @@ export const HomeView = {
     } finally {
       this.loading = false;
     }
+  },
+
+  filterImagesByShape: function(images, shape) {
+    return new Promise(async (resolve) => {
+      const checkOrientation = (imgRecord) => {
+        return new Promise((res) => {
+          const tempImg = new Image();
+          tempImg.onload = () => {
+            const ratio = tempImg.naturalWidth / tempImg.naturalHeight;
+            if (shape === 'landscape' && ratio > 1.1) res(true);
+            else if (shape === 'portrait' && ratio < 0.9) res(true);
+            else if (shape === 'square' && ratio >= 0.9 && ratio <= 1.1) res(true);
+            else res(false);
+          };
+          tempImg.onerror = () => res(false);
+          tempImg.src = imgRecord.drive_view_link;
+        });
+      };
+      
+      const results = await Promise.all(images.map(img => checkOrientation(img)));
+      resolve(images.filter((_, idx) => results[idx]));
+    });
   },
 
   loadMore: async function() {
@@ -130,42 +169,124 @@ export const HomeView = {
     const filterContainer = document.getElementById('board-filters');
     if (!filterContainer) return;
 
-    const allActive = !this.selectedBoardId;
-    let html = `
-      <button class="btn ${allActive ? 'btn-primary' : 'btn-glass'}" id="filter-all-btn" style="padding: 8px 16px; font-size: 0.85rem;">
-        All
-      </button>
+    // Convert filterContainer style to a modern wrap layout
+    filterContainer.style.display = 'flex';
+    filterContainer.style.gap = '16px';
+    filterContainer.style.flexWrap = 'wrap';
+    filterContainer.style.overflowX = 'visible';
+    filterContainer.style.paddingBottom = '0';
+    filterContainer.style.marginBottom = '32px';
+
+    filterContainer.innerHTML = `
+      <div style="display: flex; gap: 16px; flex-wrap: wrap; width: 100%; align-items: center;">
+        <!-- In-View Search Input -->
+        <div class="search-bar" style="position: relative; flex: 1; min-width: 240px; margin-right: auto; max-width: 400px; display: block; visibility: visible;">
+          <span class="material-icons-outlined" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); pointer-events: none;">search</span>
+          <input type="text" id="home-search-input" placeholder="Search titles, descriptions..." style="width: 100%; padding: 12px 16px 12px 42px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.95rem; font-family: var(--font-body); transition: var(--transition-fast);" value="${this.searchQuery || ''}">
+        </div>
+
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+          <!-- Board Select -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Collection</span>
+            <select id="home-board-select" class="btn btn-glass" style="padding: 10px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.85rem; font-weight: 500; cursor: pointer; outline: none;">
+              <option value="">All Collections</option>
+              ${this.boards.map(b => `<option value="${b.id}" ${this.selectedBoardId === b.id ? 'selected' : ''}>${b.name}</option>`).join('')}
+            </select>
+          </div>
+
+          <!-- Date Select -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Added</span>
+            <select id="home-date-select" class="btn btn-glass" style="padding: 10px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.85rem; font-weight: 500; cursor: pointer; outline: none;">
+              <option value="all" ${this.selectedDateFilter === 'all' ? 'selected' : ''}>All Time</option>
+              <option value="day" ${this.selectedDateFilter === 'day' ? 'selected' : ''}>Last 24 Hours</option>
+              <option value="week" ${this.selectedDateFilter === 'week' ? 'selected' : ''}>Past Week</option>
+              <option value="month" ${this.selectedDateFilter === 'month' ? 'selected' : ''}>Past Month</option>
+            </select>
+          </div>
+
+          <!-- Shape/Orientation Select -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Shape</span>
+            <select id="home-shape-select" class="btn btn-glass" style="padding: 10px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.85rem; font-weight: 500; cursor: pointer; outline: none;">
+              <option value="all" ${this.selectedShapeFilter === 'all' ? 'selected' : ''}>All Shapes</option>
+              <option value="portrait" ${this.selectedShapeFilter === 'portrait' ? 'selected' : ''}>Portrait</option>
+              <option value="landscape" ${this.selectedShapeFilter === 'landscape' ? 'selected' : ''}>Landscape</option>
+              <option value="square" ${this.selectedShapeFilter === 'square' ? 'selected' : ''}>Square</option>
+            </select>
+          </div>
+        </div>
+      </div>
     `;
 
-    html += this.boards.map(b => {
-      const active = this.selectedBoardId === b.id;
-      return `
-        <button class="btn ${active ? 'btn-primary' : 'btn-glass'} filter-board-btn" data-id="${b.id}" style="padding: 8px 16px; font-size: 0.85rem;">
-          ${b.name}
-        </button>
-      `;
-    }).join('');
+    // Bind event listeners
+    const searchInp = document.getElementById('home-search-input');
+    const boardSel = document.getElementById('home-board-select');
+    const dateSel = document.getElementById('home-date-select');
+    const shapeSel = document.getElementById('home-shape-select');
 
-    filterContainer.innerHTML = html;
+    const handleFilterChange = async () => {
+      this.searchQuery = searchInp ? searchInp.value.trim() : '';
+      this.selectedBoardId = boardSel ? boardSel.value : null;
+      this.selectedDateFilter = dateSel ? dateSel.value : 'all';
+      this.selectedShapeFilter = shapeSel ? shapeSel.value : 'all';
+      
+      // Update URL parameters
+      const params = new URLSearchParams();
+      if (this.searchQuery) params.set('q', this.searchQuery);
+      if (this.selectedBoardId) params.set('boardId', this.selectedBoardId);
+      if (this.selectedDateFilter !== 'all') params.set('date', this.selectedDateFilter);
+      if (this.selectedShapeFilter !== 'all') params.set('shape', this.selectedShapeFilter);
+      
+      const searchStr = params.toString();
+      window.history.replaceState({}, '', '/' + (searchStr ? '?' + searchStr : ''));
 
-    // Attach click events to filters
-    document.getElementById('filter-all-btn').onclick = () => {
-      window.appState.navigate(this.searchQuery ? `/?q=${encodeURIComponent(this.searchQuery)}` : '/');
+      // Reload grid data
+      this.images = [];
+      this.page = 0;
+      this.hasMore = false;
+      
+      const gridContainer = document.getElementById('grid-container');
+      if (gridContainer) gridContainer.innerHTML = renderPinSkeleton(10);
+      
+      await this.fetchImages();
+      this.renderGrid();
     };
 
-    filterContainer.querySelectorAll('.filter-board-btn').forEach(btn => {
-      btn.onclick = () => {
-        const boardId = btn.dataset.id;
-        let url = `/?boardId=${boardId}`;
-        if (this.searchQuery) url += `&q=${encodeURIComponent(this.searchQuery)}`;
-        window.appState.navigate(url);
-      };
-    });
+    if (searchInp) {
+      let debounceTimer;
+      searchInp.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(handleFilterChange, 300);
+      });
+      searchInp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          clearTimeout(debounceTimer);
+          handleFilterChange();
+        }
+      });
+    }
+
+    if (boardSel) boardSel.addEventListener('change', handleFilterChange);
+    if (dateSel) dateSel.addEventListener('change', handleFilterChange);
+    if (shapeSel) shapeSel.addEventListener('change', handleFilterChange);
   },
 
   renderGrid: function() {
     const gridContainer = document.getElementById('grid-container');
     if (!gridContainer) return;
+
+    if (this.images.length === 0) {
+      gridContainer.innerHTML = `
+        <div class="glass text-center animate-fade" style="padding: 64px 24px; text-align: center; border-radius: var(--radius-lg); width: 100%;">
+          <span class="material-icons-outlined" style="font-size: 4rem; color: var(--text-muted); margin-bottom: 16px;">image_not_supported</span>
+          <h2 style="font-size: 1.3rem; margin-bottom: 8px;">No images found</h2>
+          <p style="color: var(--text-secondary); font-size: 0.95rem;">Be the first to upload an image, or adjust your search filters above.</p>
+        </div>
+      `;
+      return;
+    }
 
     gridContainer.innerHTML = renderMasonryGrid(this.images, this.hasMore);
 
@@ -175,14 +296,12 @@ export const HomeView = {
       setupGridEvents(
         gridEl,
         (pinId) => {
-          // Open lightbox by adding pin parameter to path URL query
           const currentPath = window.location.pathname;
           const currentSearch = window.location.search;
           const connector = currentSearch.includes('?') ? '&' : '?';
           window.appState.navigate(`${currentPath}${currentSearch}${connector}pin=${pinId}`);
         },
         async (pinId, likeBtn) => {
-          // Fire like trigger
           if (window.appState && window.appState.toggleLike) {
             await window.appState.toggleLike(pinId, likeBtn);
           }
@@ -199,11 +318,38 @@ export const HomeView = {
 
   handleGlobalSearch: function(query) {
     this.searchQuery = query;
-    let url = '/';
-    if (query) url += `?q=${encodeURIComponent(query)}`;
-    if (this.selectedBoardId) {
-      url += (query ? '&' : '?') + `boardId=${this.selectedBoardId}`;
+    
+    // Sync with the in-view input if rendered
+    const searchInp = document.getElementById('home-search-input');
+    if (searchInp) {
+      searchInp.value = query;
     }
-    window.appState.navigate(url);
+    
+    // Trigger filters update
+    const boardSel = document.getElementById('home-board-select');
+    const dateSel = document.getElementById('home-date-select');
+    const shapeSel = document.getElementById('home-shape-select');
+    
+    this.selectedBoardId = boardSel ? boardSel.value : null;
+    this.selectedDateFilter = dateSel ? dateSel.value : 'all';
+    this.selectedShapeFilter = shapeSel ? shapeSel.value : 'all';
+
+    const params = new URLSearchParams();
+    if (this.searchQuery) params.set('q', this.searchQuery);
+    if (this.selectedBoardId) params.set('boardId', this.selectedBoardId);
+    if (this.selectedDateFilter !== 'all') params.set('date', this.selectedDateFilter);
+    if (this.selectedShapeFilter !== 'all') params.set('shape', this.selectedShapeFilter);
+
+    const searchStr = params.toString();
+    window.history.replaceState({}, '', '/' + (searchStr ? '?' + searchStr : ''));
+
+    this.images = [];
+    this.page = 0;
+    this.hasMore = false;
+    
+    const gridContainer = document.getElementById('grid-container');
+    if (gridContainer) gridContainer.innerHTML = renderPinSkeleton(10);
+    
+    this.fetchImages().then(() => this.renderGrid());
   }
 };

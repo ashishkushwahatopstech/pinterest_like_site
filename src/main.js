@@ -86,6 +86,7 @@ window.appState = {
       const { data: boards, error } = await supabase
         .from('boards')
         .select('*')
+        .eq('user_id', window.appState.currentUser.uid)
         .order('name');
         
       if (error) {
