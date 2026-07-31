@@ -313,7 +313,7 @@ export const HomeView = {
         <!-- Collapsible Selectors Wrapper -->
         <div id="collapsible-filters" class="collapsible-filters-pane">
           <!-- Board Custom Dropdown -->
-          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 220px; position: relative;">
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 220px; position: relative; z-index: 3;">
             <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; min-width: 65px;">Collection</span>
             <div class="custom-dropdown" id="board-dropdown-wrapper">
               <button class="custom-dropdown-trigger" id="board-dropdown-trigger">
@@ -350,7 +350,7 @@ export const HomeView = {
           </div>
 
           <!-- Date Custom Dropdown -->
-          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 220px; position: relative;">
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 220px; position: relative; z-index: 2;">
             <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; min-width: 65px;">Added</span>
             <div class="custom-dropdown" id="date-dropdown-wrapper">
               <button class="custom-dropdown-trigger" id="date-dropdown-trigger">
@@ -369,7 +369,7 @@ export const HomeView = {
           </div>
 
           <!-- Shape Custom Dropdown -->
-          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 220px; position: relative;">
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 220px; position: relative; z-index: 1;">
             <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; min-width: 65px;">Shape</span>
             <div class="custom-dropdown" id="shape-dropdown-wrapper">
               <button class="custom-dropdown-trigger" id="shape-dropdown-trigger">
