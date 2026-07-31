@@ -1584,3 +1584,36 @@ body.dark-theme .drawer {
     display: none !important;
   }
 }
+
+/* --- NATIVE FULLSCREEN OPTIMIZATIONS --- */
+.lightbox-content-wrapper:fullscreen {
+  background-color: #000000 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.lightbox-content-wrapper:-webkit-full-screen {
+  background-color: #000000 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.lightbox-content-wrapper:fullscreen .lightbox-image {
+  max-height: 100vh !important;
+  max-width: 100vw !important;
+  object-fit: contain !important;
+  border-radius: 0 !important;
+}
+
+.lightbox-content-wrapper:-webkit-full-screen .lightbox-image {
+  max-height: 100vh !important;
+  max-width: 100vw !important;
+  object-fit: contain !important;
+  border-radius: 0 !important;
+}

@@ -33,25 +33,16 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
           
           <div class="lightbox-details animate-slide-up" style="background: var(--bg-secondary); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; border-left: 1px solid var(--border-color); padding: 32px; box-shadow: var(--shadow-md); display: flex; flex-direction: column; justify-content: space-between; overflow-y: auto;">
             <div>
-              <div class="lightbox-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
-                <div class="lightbox-user" style="display: flex; align-items: center; gap: 12px;">
-                  <img src="${img.users?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color);">
-                  <div>
-                    <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">${img.users?.display_name || 'Anonymous'}</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary);">Uploaded ${new Date(img.created_at).toLocaleDateString()}</div>
-                  </div>
-                </div>
-                
-                <button class="btn btn-secondary btn-icon btn-like" data-id="${img.id}" style="border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;" aria-label="Like image">
-                  <span class="material-icons-outlined" style="color: var(--accent-primary);">favorite</span>
-                </button>
-              </div>
-
               <!-- Static Details Section -->
               <div id="lightbox-static-details">
-                <div id="lightbox-title-container">
+                <div id="lightbox-title-container" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; width: 100%;">
                   <h2 class="lightbox-title mobile-truncate" id="lightbox-title-display" style="color: var(--text-primary); font-family: var(--font-heading); font-size: 1.25rem; font-weight: 700; margin: 0; word-break: break-word; line-height: 1.3;">${img.title}</h2>
-                  <div style="display: flex; align-items: center; gap: 8px;">
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <!-- Like Button (Always visible) -->
+                    <button class="btn btn-secondary btn-icon btn-like" data-id="${img.id}" style="border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); cursor: pointer;" aria-label="Like image">
+                      <span class="material-icons-outlined" style="color: var(--accent-primary); font-size: 1.2rem;">favorite</span>
+                    </button>
+                    
                     ${isOwner || isAdmin ? `
                       <button id="lightbox-edit-btn" class="btn btn-glass btn-sm" style="padding: 6px 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer; background: var(--bg-primary);">
                         <span class="material-icons-outlined" style="font-size: 0.95rem;">edit</span>
@@ -62,8 +53,18 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
                   </div>
                 </div>
                 
+                <!-- Collapsible drawer on mobile -->
                 <div id="lightbox-collapsible-drawer">
-                  <p class="lightbox-desc" id="lightbox-desc-display" style="color: var(--text-secondary); line-height: 1.6; margin-top: 12px; margin-bottom: 24px; font-size: 0.9rem; word-break: break-word;">${img.description || 'No description provided.'}</p>
+                  <!-- User Profile Details Card (Inside the toggle) -->
+                  <div class="lightbox-user" style="display: flex; align-items: center; gap: 12px; margin-top: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+                    <img src="${img.users?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" alt="Avatar" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color);">
+                    <div>
+                      <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">${img.users?.display_name || 'Anonymous'}</div>
+                      <div style="font-size: 0.75rem; color: var(--text-secondary);">Uploaded ${new Date(img.created_at).toLocaleDateString()}</div>
+                    </div>
+                  </div>
+
+                  <p class="lightbox-desc" id="lightbox-desc-display" style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px; font-size: 0.9rem; word-break: break-word;">${img.description || 'No description provided.'}</p>
                   
                   ${img.boards ? `
                     <div style="margin-bottom: 24px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -166,6 +167,15 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
   const expandIcon = document.getElementById('title-expand-icon');
 
   const closeLightbox = () => {
+    // Exit native fullscreen if active
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
+    }
+
     if (lightboxModal) {
       lightboxModal.classList.remove('show');
       
@@ -184,16 +194,51 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
     closeBtn.addEventListener('click', closeLightbox);
   }
 
-  // Toggle info panel visibility (fullscreen toggle)
+  // Toggle fullscreen mode (combining Native elements request + layout fallback classes)
   if (infoToggleBtn && lightboxModal) {
-    infoToggleBtn.addEventListener('click', () => {
-      lightboxModal.classList.toggle('hide-info');
-      const isHidden = lightboxModal.classList.contains('hide-info');
-      localStorage.setItem('lightbox_info_hidden', isHidden ? 'true' : 'false');
-      
+    const contentWrapper = document.querySelector('.lightbox-content-wrapper');
+
+    const handleFullscreenChange = () => {
+      const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
       const icon = document.getElementById('info-toggle-icon');
       if (icon) {
-        icon.textContent = isHidden ? 'fullscreen_exit' : 'fullscreen';
+        icon.textContent = isFullscreen ? 'fullscreen_exit' : 'fullscreen';
+      }
+      if (isFullscreen) {
+        lightboxModal.classList.add('hide-info');
+      } else {
+        lightboxModal.classList.remove('hide-info');
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+    infoToggleBtn.addEventListener('click', () => {
+      if (contentWrapper) {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+          // Enter fullscreen
+          if (contentWrapper.requestFullscreen) {
+            contentWrapper.requestFullscreen();
+          } else if (contentWrapper.webkitRequestFullscreen) {
+            contentWrapper.webkitRequestFullscreen();
+          } else {
+            // Fallback for browsers that do not support element fullscreen
+            lightboxModal.classList.toggle('hide-info');
+            const isHidden = lightboxModal.classList.contains('hide-info');
+            const icon = document.getElementById('info-toggle-icon');
+            if (icon) {
+              icon.textContent = isHidden ? 'fullscreen_exit' : 'fullscreen';
+            }
+          }
+        } else {
+          // Exit fullscreen
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          }
+        }
       }
     });
   }
@@ -201,6 +246,11 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
   // Mobile collapsible title triggers
   if (titleContainer && collapsibleDrawer) {
     titleContainer.onclick = (e) => {
+      // Don't expand if click was on the like button or edit button
+      if (e.target.closest('.btn-like') || e.target.closest('#lightbox-edit-btn')) {
+        return;
+      }
+
       // Toggle expanded drawer
       const isExpanded = collapsibleDrawer.classList.toggle('expanded');
       
@@ -349,7 +399,7 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
     });
   }
 
-  // Share button
+  // Share button with native sharing API support
   if (shareBtn) {
     shareBtn.addEventListener('click', async () => {
       shareBtn.disabled = true;
@@ -371,6 +421,38 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
         const cleanTitle = window.appState.slugify(img.title);
         const shareUrl = `${window.location.origin}/pin/${cleanTitle}--${img.id}`;
         
+        // Use native mobile share sheet API if available
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: img.title,
+              text: img.description || `Check out ${img.title} on PinGrid!`,
+              url: shareUrl
+            });
+            
+            shareBtn.classList.remove('btn-secondary');
+            shareBtn.classList.add('btn-primary');
+            shareBtn.style.background = '#22c55e';
+            shareBtn.innerHTML = `<span class="material-icons-outlined">check</span><span>Shared</span>`;
+            
+            setTimeout(() => {
+              shareBtn.classList.remove('btn-primary');
+              shareBtn.style.background = '';
+              shareBtn.classList.add('btn-secondary');
+              shareBtn.innerHTML = `<span class="material-icons-outlined">share</span><span>Share</span>`;
+              shareBtn.disabled = false;
+            }, 2000);
+            return;
+          } catch (shareErr) {
+            if (shareErr.name === 'AbortError') {
+              shareBtn.disabled = false;
+              shareBtn.innerHTML = `<span class="material-icons-outlined">share</span><span>Share</span>`;
+              return;
+            }
+            console.warn("navigator.share failed, running clipboard fallback:", shareErr);
+          }
+        }
+
         // Robust clipboard write fallback
         let copySuccess = false;
         if (navigator.clipboard && navigator.clipboard.writeText) {
