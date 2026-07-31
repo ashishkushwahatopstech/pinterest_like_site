@@ -47,7 +47,7 @@ export const renderMasonryGrid = (images, hasMore = false) => {
   }).join('');
 
   return `
-    <div class="masonry-grid" id="gallery-masonry-grid">
+    <div class="masonry-grid" id="gallery-masonry-grid" style="--item-count: ${images.length};">
       ${itemsHtml}
     </div>
     ${hasMore ? `
