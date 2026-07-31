@@ -8,6 +8,7 @@ export const AdminView = {
   users: [],
   images: [],
   boards: [],
+  trendingBoardIds: [],
   stats: {
     totalUsers: 0,
     totalImages: 0,
@@ -123,15 +124,30 @@ export const AdminView = {
   fetchBoards: async function() {
     try {
       const supabase = await getSupabase();
+      
+      // Fetch boards
       const { data, error } = await supabase
         .from('boards')
         .select('*, users(*)')
         .order('name');
-
       if (error) throw error;
       this.boards = data || [];
+
+      // Fetch trending boards settings
+      const { data: settingsData, error: settingsErr } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('key', 'trending_boards')
+        .single();
+        
+      if (!settingsErr && settingsData) {
+        this.trendingBoardIds = JSON.parse(settingsData.value) || [];
+      } else {
+        this.trendingBoardIds = [];
+      }
     } catch (err) {
       console.error("Error fetching admin boards:", err);
+      this.trendingBoardIds = [];
     }
   },
 
@@ -256,6 +272,7 @@ export const AdminView = {
                       <th>Board Name</th>
                       <th>Creator</th>
                       <th>Visibility</th>
+                      <th>Trend Status</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -379,32 +396,45 @@ export const AdminView = {
 
   renderBoardRows: function(boardList) {
     if (boardList.length === 0) {
-      return `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No boards created yet.</td></tr>`;
+      return `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No boards created yet.</td></tr>`;
     }
 
-    return boardList.map(b => `
-      <tr id="board-row-${b.id}">
-        <td>
-          <div style="font-weight: 600; display: flex; align-items: center; gap: 8px;">
-            <span class="material-icons-outlined" style="color: var(--text-secondary);">folder</span>
-            <span>${b.name}</span>
-          </div>
-        </td>
-        <td>
-          <div style="font-size: 0.8rem; font-weight: 500;">${b.users?.display_name || 'Anonymous'}</div>
-        </td>
-        <td>
-          <span class="btn-glass" style="padding: 2px 6px; font-size: 0.7rem; border-radius: var(--radius-sm); color: ${b.is_public ? '#22c55e' : '#f59e0b'}; background: ${b.is_public ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)'}">
-            ${b.is_public ? 'PUBLIC' : 'PRIVATE'}
-          </span>
-        </td>
-        <td>
-          <button class="btn btn-danger btn-sm btn-delete-board" data-id="${b.id}" style="padding: 4px 10px; font-size: 0.75rem;">
-            Delete Board
-          </button>
-        </td>
-      </tr>
-    `).join('');
+    return boardList.map(b => {
+      const isTrending = this.trendingBoardIds.includes(b.id);
+      return `
+        <tr id="board-row-${b.id}">
+          <td>
+            <div style="font-weight: 600; display: flex; align-items: center; gap: 8px;">
+               <span class="material-icons-outlined" style="color: var(--text-secondary);">folder</span>
+               <span>${b.name}</span>
+            </div>
+          </td>
+          <td>
+            <div style="font-size: 0.8rem; font-weight: 500;">${b.users?.display_name || 'Anonymous'}</div>
+          </td>
+          <td>
+            <span class="btn-glass" style="padding: 2px 6px; font-size: 0.7rem; border-radius: var(--radius-sm); color: ${b.is_public ? '#22c55e' : '#f59e0b'}; background: ${b.is_public ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)'}">
+              ${b.is_public ? 'PUBLIC' : 'PRIVATE'}
+            </span>
+          </td>
+          <td>
+            <span id="board-trend-badge-${b.id}" class="btn-glass" style="padding: 2px 6px; font-size: 0.7rem; border-radius: var(--radius-sm); color: ${isTrending ? '#ff3366' : 'var(--text-secondary)'}; background: ${isTrending ? 'rgba(255,51,102,0.1)' : 'var(--hover-bg)'}">
+              ${isTrending ? 'TRENDING' : 'STANDARD'}
+            </span>
+          </td>
+          <td>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-glass btn-sm btn-trend-board" data-id="${b.id}" data-status="${isTrending}" style="padding: 4px 10px; font-size: 0.75rem; color: ${isTrending ? '#ff3366' : 'var(--text-primary)'};">
+                ${isTrending ? 'Remove Trend' : 'Make Trend'}
+              </button>
+              <button class="btn btn-danger btn-sm btn-delete-board" data-id="${b.id}" style="padding: 4px 10px; font-size: 0.75rem;">
+                Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
   },
 
   setupEvents: function() {
@@ -604,6 +634,7 @@ export const AdminView = {
   },
 
   attachBoardActionEvents: function() {
+    // Delete board handler
     document.querySelectorAll('.btn-delete-board').forEach(btn => {
       btn.onclick = async () => {
         const boardId = btn.dataset.id;
@@ -647,6 +678,54 @@ export const AdminView = {
             alert("Failed to delete board: " + err.message);
             btn.disabled = false;
           }
+        }
+      };
+    });
+
+    // Trend toggle handler
+    document.querySelectorAll('.btn-trend-board').forEach(btn => {
+      btn.onclick = async () => {
+        const boardId = btn.dataset.id;
+        const isTrending = btn.dataset.status === 'true';
+        btn.disabled = true;
+
+        try {
+          const supabase = await getSupabase();
+          
+          let newTrendingList = [...this.trendingBoardIds];
+          if (isTrending) {
+            newTrendingList = newTrendingList.filter(id => id !== boardId);
+          } else {
+            if (!newTrendingList.includes(boardId)) {
+              newTrendingList.push(boardId);
+            }
+          }
+
+          // Save new trending_boards setting
+          const { error } = await supabase
+            .from('site_settings')
+            .upsert({ key: 'trending_boards', value: JSON.stringify(newTrendingList) });
+
+          if (error) throw error;
+
+          this.trendingBoardIds = newTrendingList;
+          const newStatus = !isTrending;
+          
+          alert(`Board trend updated successfully.`);
+          btn.dataset.status = newStatus.toString();
+          btn.textContent = newStatus ? 'Remove Trend' : 'Make Trend';
+          btn.style.color = newStatus ? '#ff3366' : 'var(--text-primary)';
+          
+          const badge = document.getElementById(`board-trend-badge-${boardId}`);
+          if (badge) {
+            badge.textContent = newStatus ? 'TRENDING' : 'STANDARD';
+            badge.style.color = newStatus ? '#ff3366' : 'var(--text-secondary)';
+            badge.style.background = newStatus ? 'rgba(255,51,102,0.1)' : 'var(--hover-bg)';
+          }
+        } catch (err) {
+          alert("Failed to update board trend: " + err.message);
+        } finally {
+          btn.disabled = false;
         }
       };
     });

@@ -8,6 +8,7 @@ export const HomeView = {
   containerId: 'view-container',
   images: [],
   boards: [],
+  trendingBoardIds: [],
   selectedBoardId: null,
   searchQuery: '',
   selectedDateFilter: 'all', // 'all' | 'day' | 'week' | 'month'
@@ -65,6 +66,7 @@ export const HomeView = {
     // Fetch filters and data
     await Promise.all([
       this.fetchPublicBoards(),
+      this.fetchTrendingSettings(),
       this.fetchImages()
     ]);
 
@@ -85,6 +87,32 @@ export const HomeView = {
     } catch (err) {
       console.error("Error fetching public boards:", err);
     }
+  },
+
+  fetchTrendingSettings: async function() {
+    try {
+      const { data, error } = await supabasePublic
+        .from('site_settings')
+        .select('*')
+        .eq('key', 'trending_boards')
+        .single();
+      
+      if (!error && data) {
+        this.trendingBoardIds = JSON.parse(data.value) || [];
+      } else {
+        this.trendingBoardIds = [];
+      }
+    } catch (err) {
+      this.trendingBoardIds = [];
+    }
+  },
+
+  getTrendingBoardIds: function() {
+    if (this.trendingBoardIds && this.trendingBoardIds.length > 0) {
+      return this.trendingBoardIds;
+    }
+    // Fallback to first 4 board IDs as trending
+    return this.boards.slice(0, 4).map(b => b.id);
   },
 
   fetchImages: async function() {
@@ -238,9 +266,38 @@ export const HomeView = {
                 </div>
                 <div class="dropdown-options-list" id="board-options-list">
                   <div class="dropdown-option ${!this.selectedBoardId ? 'selected' : ''}" data-value="">All Collections</div>
-                  ${this.boards.map(b => `
-                    <div class="dropdown-option ${this.selectedBoardId === b.id ? 'selected' : ''}" data-value="${b.id}">${b.name}</div>
-                  `).join('')}
+                  
+                  ${(() => {
+                    const trendingIds = this.getTrendingBoardIds();
+                    const trending = this.boards.filter(b => trendingIds.includes(b.id));
+                    const normal = this.boards.filter(b => !trendingIds.includes(b.id));
+                    
+                    let html = '';
+                    if (trending.length > 0) {
+                      html += `
+                        <div class="dropdown-group-header" style="padding: 6px 12px; font-size: 0.75rem; color: var(--accent-primary); font-weight: 700; border-bottom: 1px solid rgba(255, 51, 102, 0.1); margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                          <span class="material-icons-outlined" style="font-size: 0.95rem;">local_fire_department</span>
+                          <span>Trending</span>
+                        </div>
+                      `;
+                      html += trending.map(b => `
+                        <div class="dropdown-option ${this.selectedBoardId === b.id ? 'selected' : ''}" data-value="${b.id}" style="padding-left: 20px;">${b.name}</div>
+                      `).join('');
+                    }
+                    
+                    if (normal.length > 0) {
+                      html += `
+                        <div class="dropdown-group-header" style="padding: 6px 12px; font-size: 0.75rem; color: var(--text-secondary); font-weight: 700; border-bottom: 1px solid var(--border-color); margin-top: 8px; display: flex; align-items: center; gap: 4px;">
+                          <span class="material-icons-outlined" style="font-size: 0.95rem;">folder</span>
+                          <span>Collections</span>
+                        </div>
+                      `;
+                      html += normal.map(b => `
+                        <div class="dropdown-option ${this.selectedBoardId === b.id ? 'selected' : ''}" data-value="${b.id}" style="padding-left: 20px;">${b.name}</div>
+                      `).join('');
+                    }
+                    return html;
+                  })()}
                 </div>
               </div>
             </div>
