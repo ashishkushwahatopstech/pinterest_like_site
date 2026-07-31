@@ -100,42 +100,6 @@ export const renderHeader = (user, isAdmin, currentRoute) => {
 
 // Hook header events
 export const setupHeaderEvents = (user, onSearch) => {
-  // Setup Theme Switcher Toggle
-  const themeBtn = document.getElementById('theme-toggle-btn');
-  const themeIcon = document.getElementById('theme-toggle-icon');
-  if (themeBtn && themeIcon) {
-    const applyTheme = (isDark) => {
-      if (isDark) {
-        document.body.classList.add('dark-theme');
-        themeIcon.textContent = 'light_mode';
-      } else {
-        document.body.classList.remove('dark-theme');
-        themeIcon.textContent = 'dark_mode';
-      }
-    };
-
-    const isDark = localStorage.getItem('theme_dark') === 'true';
-    applyTheme(isDark);
-
-    themeBtn.onclick = (e) => {
-      e.stopPropagation();
-      const newDark = !document.body.classList.contains('dark-theme');
-      localStorage.setItem('theme_dark', newDark ? 'true' : 'false');
-      applyTheme(newDark);
-    };
-  }
-
-  // Sticky header class on scroll
-  window.addEventListener('scroll', () => {
-    const header = document.querySelector('.site-header');
-    if (header) {
-      if (window.scrollY > 20) {
-        header.classList.add('scrolled');
-      } else {
-        header.classList.remove('scrolled');
-      }
-    }
-  });
 
   // Dropdown toggle
   const avatarBtn = document.getElementById('avatar-toggle-btn');

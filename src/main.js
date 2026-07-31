@@ -901,6 +901,18 @@ const initApp = async () => {
   // 1b. Apply appearance customization before paint to avoid flashes!
   window.appState.applyCustomAppearance();
 
+  // 1c. Bind global scroll listener once for the sticky header styles
+  window.addEventListener('scroll', () => {
+    const header = document.querySelector('.site-header');
+    if (header) {
+      if (window.scrollY > 20) {
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('scrolled');
+      }
+    }
+  }, { passive: true });
+
   // 2. Setup drawer events
   setupDrawerNav();
 
