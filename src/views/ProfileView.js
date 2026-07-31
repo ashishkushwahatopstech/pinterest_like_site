@@ -17,6 +17,9 @@ export const ProfileView = {
       window.appState.navigate('/');
       return;
     }
+    if (window.appState.updateSEO) {
+      window.appState.updateSEO("Creator Profile", "Manage your cloud storage collections, edit public details, and explore your liked images gallery.");
+    }
 
     this.boards = [];
     this.likes = [];

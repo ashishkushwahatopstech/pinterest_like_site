@@ -1,10 +1,13 @@
 import { getSupabase, isUserAdmin } from '../services/supabase';
 import { renderAdminSkeleton } from '../components/Skeleton';
+import { deleteFromDrive } from '../services/drive';
+import { getGoogleDriveToken } from '../services/api';
 
 export const AdminView = {
   containerId: 'view-container',
   users: [],
   images: [],
+  boards: [],
   stats: {
     totalUsers: 0,
     totalImages: 0,
@@ -27,7 +30,6 @@ export const AdminView = {
     `;
 
     // Security check: is the user really an admin?
-    // Supabase DB will also reject all requests if they aren't, so this is double-secure.
     const adminCheck = await isUserAdmin();
     if (!adminCheck) {
       container.innerHTML = `
@@ -41,10 +43,16 @@ export const AdminView = {
       return;
     }
 
+    // Update browser title and Open Graph tags for SEO
+    if (window.appState.updateSEO) {
+      window.appState.updateSEO("Admin control panel", "Moderate uploaded content, manage user registrations, and view stats.");
+    }
+
     await Promise.all([
       this.fetchStats(),
       this.fetchUsers(),
       this.fetchImages(),
+      this.fetchBoards(),
       this.fetchSiteSettings()
     ]);
 
@@ -70,10 +78,10 @@ export const AdminView = {
       if (imageErr) throw imageErr;
       this.stats.totalImages = imageCount || 0;
 
-      // Estimate total storage size (Google Drive files plus Supabase backup images)
+      // Estimate total storage size (1.5MB average size per image uploaded)
       const { data: sizes, error: sizeErr } = await supabase
         .from('images')
-        .select('id'); // We'll estimate at roughly 1.5MB average size per image uploaded
+        .select('id');
       if (sizeErr) throw sizeErr;
       
       this.stats.totalStorageEst = (sizes?.length || 0) * 1.5 * 1024 * 1024; // in bytes
@@ -112,6 +120,21 @@ export const AdminView = {
     }
   },
 
+  fetchBoards: async function() {
+    try {
+      const supabase = await getSupabase();
+      const { data, error } = await supabase
+        .from('boards')
+        .select('*, users(*)')
+        .order('name');
+
+      if (error) throw error;
+      this.boards = data || [];
+    } catch (err) {
+      console.error("Error fetching admin boards:", err);
+    }
+  },
+
   fetchSiteSettings: async function() {
     try {
       const supabase = await getSupabase();
@@ -121,7 +144,6 @@ export const AdminView = {
 
       if (error) throw error;
       
-      // Populate defaults if settings don't exist in DB
       this.settings = {};
       data?.forEach(s => {
         this.settings[s.key] = s.value;
@@ -175,11 +197,12 @@ export const AdminView = {
 
         <!-- Admin Views Tabs / Layout -->
         <div class="admin-layout">
-          <!-- User and Content lists -->
-          <div class="glass" style="padding: 28px; border-radius: var(--radius-lg);">
-            <div class="tabs-container" style="margin-bottom: 20px;">
+          <!-- User, Content, and Boards lists -->
+          <div class="glass" style="padding: 28px; border-radius: var(--radius-lg); flex: 1; overflow-x: auto;">
+            <div class="tabs-container" style="margin-bottom: 20px; display: flex; gap: 8px; flex-wrap: wrap;">
               <button class="tab-btn active" id="admin-tab-users">User Directory</button>
               <button class="tab-btn" id="admin-tab-content">Moderation Queue</button>
+              <button class="tab-btn" id="admin-tab-boards">Boards Directory</button>
             </div>
 
             <!-- Users Section -->
@@ -223,10 +246,29 @@ export const AdminView = {
                 </table>
               </div>
             </div>
+
+            <!-- Boards Section (Hidden initially) -->
+            <div id="admin-boards-panel" style="display: none;">
+              <div class="admin-table-wrapper">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Board Name</th>
+                      <th>Creator</th>
+                      <th>Visibility</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-board-rows">
+                    ${this.renderBoardRows(this.boards)}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
 
           <!-- Configuration sidebar -->
-          <div class="glass" style="padding: 28px; border-radius: var(--radius-lg); height: fit-content;">
+          <div class="glass" style="padding: 28px; border-radius: var(--radius-lg); height: fit-content; min-width: 280px;">
             <h3 style="font-size: 1.2rem; margin-bottom: 20px; font-family: var(--font-heading);">System Config</h3>
             
             <form id="system-config-form">
@@ -335,26 +377,72 @@ export const AdminView = {
     }).join('');
   },
 
+  renderBoardRows: function(boardList) {
+    if (boardList.length === 0) {
+      return `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No boards created yet.</td></tr>`;
+    }
+
+    return boardList.map(b => `
+      <tr id="board-row-${b.id}">
+        <td>
+          <div style="font-weight: 600; display: flex; align-items: center; gap: 8px;">
+            <span class="material-icons-outlined" style="color: var(--text-secondary);">folder</span>
+            <span>${b.name}</span>
+          </div>
+        </td>
+        <td>
+          <div style="font-size: 0.8rem; font-weight: 500;">${b.users?.display_name || 'Anonymous'}</div>
+        </td>
+        <td>
+          <span class="btn-glass" style="padding: 2px 6px; font-size: 0.7rem; border-radius: var(--radius-sm); color: ${b.is_public ? '#22c55e' : '#f59e0b'}; background: ${b.is_public ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)'}">
+            ${b.is_public ? 'PUBLIC' : 'PRIVATE'}
+          </span>
+        </td>
+        <td>
+          <button class="btn btn-danger btn-sm btn-delete-board" data-id="${b.id}" style="padding: 4px 10px; font-size: 0.75rem;">
+            Delete Board
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  },
+
   setupEvents: function() {
     // Tab controls
     const tabUsers = document.getElementById('admin-tab-users');
     const tabContent = document.getElementById('admin-tab-content');
+    const tabBoards = document.getElementById('admin-tab-boards');
+    
     const usersPanel = document.getElementById('admin-users-panel');
     const contentPanel = document.getElementById('admin-content-panel');
+    const boardsPanel = document.getElementById('admin-boards-panel');
 
-    if (tabUsers && tabContent && usersPanel && contentPanel) {
+    if (tabUsers && tabContent && tabBoards && usersPanel && contentPanel && boardsPanel) {
       tabUsers.onclick = () => {
         tabUsers.classList.add('active');
         tabContent.classList.remove('active');
+        tabBoards.classList.remove('active');
         usersPanel.style.display = 'block';
         contentPanel.style.display = 'none';
+        boardsPanel.style.display = 'none';
       };
 
       tabContent.onclick = () => {
         tabContent.classList.add('active');
         tabUsers.classList.remove('active');
+        tabBoards.classList.remove('active');
         usersPanel.style.display = 'none';
         contentPanel.style.display = 'block';
+        boardsPanel.style.display = 'none';
+      };
+
+      tabBoards.onclick = () => {
+        tabBoards.classList.add('active');
+        tabUsers.classList.remove('active');
+        tabContent.classList.remove('active');
+        usersPanel.style.display = 'none';
+        contentPanel.style.display = 'none';
+        boardsPanel.style.display = 'block';
       };
     }
 
@@ -377,6 +465,7 @@ export const AdminView = {
 
     this.attachUserActionEvents();
     this.attachContentActionEvents();
+    this.attachBoardActionEvents();
 
     // System configuration saving
     const configForm = document.getElementById('system-config-form');
@@ -394,11 +483,8 @@ export const AdminView = {
         try {
           const supabase = await getSupabase();
           
-          // Save site_name
           await supabase.from('site_settings').upsert({ key: 'site_name', value: JSON.stringify(siteName) });
-          // Save announcement
           await supabase.from('site_settings').upsert({ key: 'announcement', value: JSON.stringify(announcement) });
-          // Save allow_signups
           await supabase.from('site_settings').upsert({ key: 'allow_signups', value: JSON.stringify(allowSignups) });
 
           alert("Configuration saved successfully. Refresh to see branding changes.");
@@ -512,6 +598,55 @@ export const AdminView = {
           alert("Failed to moderate image visibility: " + err.message);
         } finally {
           btn.disabled = false;
+        }
+      };
+    });
+  },
+
+  attachBoardActionEvents: function() {
+    document.querySelectorAll('.btn-delete-board').forEach(btn => {
+      btn.onclick = async () => {
+        const boardId = btn.dataset.id;
+        if (confirm("Are you sure you want to delete this board? This will delete all images assigned to this board as well!")) {
+          btn.disabled = true;
+          try {
+            const supabase = await getSupabase();
+            
+            // First fetch all images inside this board
+            const { data: imgs } = await supabase.from('images').select('*').eq('board_id', boardId);
+            if (imgs && imgs.length > 0) {
+              const accessToken = await getGoogleDriveToken();
+              for (const img of imgs) {
+                if (accessToken) {
+                  try {
+                    await deleteFromDrive(accessToken, img.drive_file_id);
+                  } catch (drvErr) {
+                    console.warn("Failed to delete related Google Drive file during cascade:", drvErr);
+                  }
+                }
+                if (img.supabase_storage_path) {
+                  try {
+                    await supabase.storage.from('gallery-backups').remove([img.supabase_storage_path]);
+                  } catch (stErr) {
+                    console.warn("Failed to delete related Supabase backup during cascade:", stErr);
+                  }
+                }
+              }
+              // Delete board images in DB
+              await supabase.from('images').delete().eq('board_id', boardId);
+            }
+            
+            // Finally delete the board
+            const { error } = await supabase.from('boards').delete().eq('id', boardId);
+            if (error) throw error;
+            
+            alert("Board and all associated images deleted successfully.");
+            const row = document.getElementById(`board-row-${boardId}`);
+            if (row) row.remove();
+          } catch (err) {
+            alert("Failed to delete board: " + err.message);
+            btn.disabled = false;
+          }
         }
       };
     });

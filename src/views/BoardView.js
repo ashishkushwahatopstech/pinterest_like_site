@@ -53,6 +53,10 @@ export const BoardView = {
       return;
     }
 
+    if (window.appState.updateSEO && this.board) {
+      window.appState.updateSEO(`Collection: ${this.board.name}`, `Browse the ${this.board.name} board backups, shared pins, and beautiful galleries on the PinGrid network.`);
+    }
+
     await this.fetchBoardImages(boardId);
     this.renderContent();
   },

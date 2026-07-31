@@ -13,6 +13,10 @@ export const SettingsView = {
       return;
     }
 
+    if (window.appState.updateSEO) {
+      window.appState.updateSEO("Cloud Storage Settings", "Configure your cloud storage connections, toggle secondary backup parameters, and manage Google Drive options.");
+    }
+
     const container = document.getElementById(this.containerId);
     if (!container) return;
 

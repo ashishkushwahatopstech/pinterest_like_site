@@ -21,6 +21,10 @@ export const HomeView = {
     // Read state from URL search parameters (for sharing/deep-linking)
     const urlParams = new URLSearchParams(window.location.search);
     
+    if (window.appState.updateSEO) {
+      window.appState.updateSEO("Discover Creative Ideas & Wallpapers", "Explore custom-curated cloud storage image collections, shared pins, and beautiful galleries on the PinGrid network.");
+    }
+    
     this.images = [];
     this.boards = [];
     this.page = 0;
@@ -187,6 +191,20 @@ export const HomeView = {
     filterContainer.style.display = 'block';
     filterContainer.style.marginBottom = '32px';
 
+    const selectedBoardName = this.selectedBoardId 
+      ? (this.boards.find(b => b.id === this.selectedBoardId)?.name || 'Collection') 
+      : 'All Collections';
+
+    const selectedDateName = 
+      this.selectedDateFilter === 'day' ? 'Last 24 Hours' :
+      this.selectedDateFilter === 'week' ? 'Past Week' :
+      this.selectedDateFilter === 'month' ? 'Past Month' : 'All Time';
+
+    const selectedShapeName = 
+      this.selectedShapeFilter === 'portrait' ? 'Portrait' :
+      this.selectedShapeFilter === 'landscape' ? 'Landscape' :
+      this.selectedShapeFilter === 'square' ? 'Square' : 'All Shapes';
+
     filterContainer.innerHTML = `
       <div class="filter-panel-wrapper">
         <div class="filter-search-row">
@@ -205,54 +223,72 @@ export const HomeView = {
 
         <!-- Collapsible Selectors Wrapper -->
         <div id="collapsible-filters" class="collapsible-filters-pane">
-          <!-- Board Select -->
-          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 180px;">
+          <!-- Board Custom Dropdown -->
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 220px; position: relative;">
             <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; min-width: 65px;">Collection</span>
-            <div class="custom-select-wrapper">
-              <select id="home-board-select" class="custom-select">
-                <option value="">All Collections</option>
-                ${this.boards.map(b => `<option value="${b.id}" ${this.selectedBoardId === b.id ? 'selected' : ''}>${b.name}</option>`).join('')}
-              </select>
-              <span class="material-icons-outlined select-arrow">expand_more</span>
+            <div class="custom-dropdown" id="board-dropdown-wrapper">
+              <button class="custom-dropdown-trigger" id="board-dropdown-trigger">
+                <span class="trigger-label">${selectedBoardName}</span>
+                <span class="material-icons-outlined select-arrow">expand_more</span>
+              </button>
+              <div class="custom-dropdown-menu glass" id="board-dropdown-menu">
+                <div class="dropdown-search-box">
+                  <span class="material-icons-outlined">search</span>
+                  <input type="text" id="board-dropdown-search" placeholder="Search collections..." autocomplete="off">
+                </div>
+                <div class="dropdown-options-list" id="board-options-list">
+                  <div class="dropdown-option ${!this.selectedBoardId ? 'selected' : ''}" data-value="">All Collections</div>
+                  ${this.boards.map(b => `
+                    <div class="dropdown-option ${this.selectedBoardId === b.id ? 'selected' : ''}" data-value="${b.id}">${b.name}</div>
+                  `).join('')}
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Date Select -->
-          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 180px;">
+          <!-- Date Custom Dropdown -->
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 220px; position: relative;">
             <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; min-width: 65px;">Added</span>
-            <div class="custom-select-wrapper">
-              <select id="home-date-select" class="custom-select">
-                <option value="all" ${this.selectedDateFilter === 'all' ? 'selected' : ''}>All Time</option>
-                <option value="day" ${this.selectedDateFilter === 'day' ? 'selected' : ''}>Last 24 Hours</option>
-                <option value="week" ${this.selectedDateFilter === 'week' ? 'selected' : ''}>Past Week</option>
-                <option value="month" ${this.selectedDateFilter === 'month' ? 'selected' : ''}>Past Month</option>
-              </select>
-              <span class="material-icons-outlined select-arrow">expand_more</span>
+            <div class="custom-dropdown" id="date-dropdown-wrapper">
+              <button class="custom-dropdown-trigger" id="date-dropdown-trigger">
+                <span class="trigger-label">${selectedDateName}</span>
+                <span class="material-icons-outlined select-arrow">expand_more</span>
+              </button>
+              <div class="custom-dropdown-menu glass" id="date-dropdown-menu">
+                <div class="dropdown-options-list">
+                  <div class="dropdown-option ${this.selectedDateFilter === 'all' ? 'selected' : ''}" data-value="all">All Time</div>
+                  <div class="dropdown-option ${this.selectedDateFilter === 'day' ? 'selected' : ''}" data-value="day">Last 24 Hours</div>
+                  <div class="dropdown-option ${this.selectedDateFilter === 'week' ? 'selected' : ''}" data-value="week">Past Week</div>
+                  <div class="dropdown-option ${this.selectedDateFilter === 'month' ? 'selected' : ''}" data-value="month">Past Month</div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Shape/Orientation Select -->
-          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 180px;">
+          <!-- Shape Custom Dropdown -->
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 220px; position: relative;">
             <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; min-width: 65px;">Shape</span>
-            <div class="custom-select-wrapper">
-              <select id="home-shape-select" class="custom-select">
-                <option value="all" ${this.selectedShapeFilter === 'all' ? 'selected' : ''}>All Shapes</option>
-                <option value="portrait" ${this.selectedShapeFilter === 'portrait' ? 'selected' : ''}>Portrait</option>
-                <option value="landscape" ${this.selectedShapeFilter === 'landscape' ? 'selected' : ''}>Landscape</option>
-                <option value="square" ${this.selectedShapeFilter === 'square' ? 'selected' : ''}>Square</option>
-              </select>
-              <span class="material-icons-outlined select-arrow">expand_more</span>
+            <div class="custom-dropdown" id="shape-dropdown-wrapper">
+              <button class="custom-dropdown-trigger" id="shape-dropdown-trigger">
+                <span class="trigger-label">${selectedShapeName}</span>
+                <span class="material-icons-outlined select-arrow">expand_more</span>
+              </button>
+              <div class="custom-dropdown-menu glass" id="shape-dropdown-menu">
+                <div class="dropdown-options-list">
+                  <div class="dropdown-option ${this.selectedShapeFilter === 'all' ? 'selected' : ''}" data-value="all">All Shapes</div>
+                  <div class="dropdown-option ${this.selectedShapeFilter === 'portrait' ? 'selected' : ''}" data-value="portrait">Portrait</div>
+                  <div class="dropdown-option ${this.selectedShapeFilter === 'landscape' ? 'selected' : ''}" data-value="landscape">Landscape</div>
+                  <div class="dropdown-option ${this.selectedShapeFilter === 'square' ? 'selected' : ''}" data-value="square">Square</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     `;
 
-    // Bind event listeners
+    // Bind search and filter events
     const searchInp = document.getElementById('home-search-input');
-    const boardSel = document.getElementById('home-board-select');
-    const dateSel = document.getElementById('home-date-select');
-    const shapeSel = document.getElementById('home-shape-select');
     
     // Toggle Mobile Filters Drawer
     const toggleBtn = document.getElementById('mobile-filter-toggle-btn');
@@ -265,7 +301,8 @@ export const HomeView = {
         toggleBtn.classList.add('btn-primary');
       }
 
-      toggleBtn.addEventListener('click', () => {
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         collapsiblePane.classList.toggle('show-mobile-filters');
         const isShown = collapsiblePane.classList.contains('show-mobile-filters');
         sessionStorage.setItem('mobile_filters_pane_opened', isShown ? 'true' : 'false');
@@ -279,9 +316,6 @@ export const HomeView = {
 
     const handleFilterChange = async () => {
       this.searchQuery = searchInp ? searchInp.value.trim() : '';
-      this.selectedBoardId = boardSel ? boardSel.value : null;
-      this.selectedDateFilter = dateSel ? dateSel.value : 'all';
-      this.selectedShapeFilter = shapeSel ? shapeSel.value : 'all';
       
       const params = new URLSearchParams();
       if (this.searchQuery) params.set('q', this.searchQuery);
@@ -303,6 +337,80 @@ export const HomeView = {
       this.renderGrid();
     };
 
+    // Helper to setup custom dropdown selection
+    const setupCustomDropdown = (triggerId, menuId, onSelect) => {
+      const trigger = document.getElementById(triggerId);
+      const menu = document.getElementById(menuId);
+      if (!trigger || !menu) return;
+
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        // Close all other menus first
+        document.querySelectorAll('.custom-dropdown-menu').forEach(m => {
+          if (m !== menu) m.classList.remove('show');
+        });
+        
+        menu.classList.toggle('show');
+      });
+
+      menu.querySelectorAll('.dropdown-option').forEach(option => {
+        option.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const val = option.dataset.value;
+          const label = option.textContent;
+          
+          trigger.querySelector('.trigger-label').textContent = label;
+          menu.querySelectorAll('.dropdown-option').forEach(opt => opt.classList.remove('selected'));
+          option.classList.add('selected');
+          
+          menu.classList.remove('show');
+          onSelect(val);
+        });
+      });
+    };
+
+    // Initialize custom dropdowns
+    setupCustomDropdown('board-dropdown-trigger', 'board-dropdown-menu', async (val) => {
+      this.selectedBoardId = val ? val : null;
+      await handleFilterChange();
+    });
+
+    setupCustomDropdown('date-dropdown-trigger', 'date-dropdown-menu', async (val) => {
+      this.selectedDateFilter = val;
+      await handleFilterChange();
+    });
+
+    setupCustomDropdown('shape-dropdown-trigger', 'shape-dropdown-menu', async (val) => {
+      this.selectedShapeFilter = val;
+      await handleFilterChange();
+    });
+
+    // Collection searching logic
+    const boardSearch = document.getElementById('board-dropdown-search');
+    if (boardSearch) {
+      boardSearch.addEventListener('click', (e) => e.stopPropagation()); // Prevent close
+      boardSearch.addEventListener('input', () => {
+        const query = boardSearch.value.toLowerCase().trim();
+        const optionsList = document.getElementById('board-options-list');
+        if (optionsList) {
+          optionsList.querySelectorAll('.dropdown-option').forEach(opt => {
+            const val = opt.textContent.toLowerCase();
+            if (val.includes(query) || opt.dataset.value === "") {
+              opt.style.display = 'flex';
+            } else {
+              opt.style.display = 'none';
+            }
+          });
+        }
+      });
+    }
+
+    // Close all custom dropdowns when clicking outside
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.custom-dropdown-menu').forEach(m => m.classList.remove('show'));
+    });
+
     if (searchInp) {
       let debounceTimer;
       searchInp.addEventListener('input', () => {
@@ -316,10 +424,6 @@ export const HomeView = {
         }
       });
     }
-
-    if (boardSel) boardSel.addEventListener('change', handleFilterChange);
-    if (dateSel) dateSel.addEventListener('change', handleFilterChange);
-    if (shapeSel) shapeSel.addEventListener('change', handleFilterChange);
   },
 
   renderGrid: function() {
