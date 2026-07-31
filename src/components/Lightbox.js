@@ -125,7 +125,7 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
 
         <!-- Related Images Section -->
         <div class="lightbox-related-section animate-fade" id="lightbox-related-section" style="margin-top: 40px; display: none;">
-          <h3 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700; color: var(--text-primary); margin-bottom: 24px; display: flex; align-items: center; gap: 8px;">
+          <h3 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700; color: #ffffff; margin-bottom: 24px; display: flex; align-items: center; gap: 8px;">
             <span class="material-icons-outlined" style="color: var(--accent-primary); font-size: 1.6rem;">auto_awesome</span>
             <span>More Like This</span>
           </h3>
