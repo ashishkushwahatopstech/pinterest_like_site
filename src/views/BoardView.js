@@ -14,7 +14,7 @@ export const BoardView = {
   render: async function(params = {}) {
     const boardId = params.id;
     if (!boardId) {
-      window.location.hash = 'home';
+      window.appState.navigate('/');
       return;
     }
 
@@ -47,7 +47,7 @@ export const BoardView = {
           <span class="material-icons-outlined" style="font-size: 4rem; color: var(--text-muted); margin-bottom: 16px;">lock</span>
           <h2 style="font-size: 1.5rem; margin-bottom: 8px;">Board is private or does not exist</h2>
           <p style="color: var(--text-secondary); margin-bottom: 24px;">You do not have permission to view this board.</p>
-          <a href="#home" class="btn btn-primary">Go Home</a>
+          <a href="/" class="btn btn-primary">Go Home</a>
         </div>
       `;
       return;
@@ -197,9 +197,10 @@ export const BoardView = {
         gridEl,
         (pinId) => {
           // Open lightbox
-          const currentHash = window.location.hash || `#board/${this.board.id}`;
-          const connector = currentHash.includes('?') ? '&' : '?';
-          window.location.hash = `${currentHash}${connector}pin=${pinId}`;
+          const currentPath = window.location.pathname;
+          const currentSearch = window.location.search;
+          const connector = currentSearch.includes('?') ? '&' : '?';
+          window.appState.navigate(`${currentPath}${currentSearch}${connector}pin=${pinId}`);
         },
         async (pinId, likeBtn) => {
           if (window.appState && window.appState.toggleLike) {
@@ -329,7 +330,7 @@ export const BoardView = {
             if (error) throw error;
             
             alert("Board deleted successfully.");
-            window.location.hash = 'profile';
+            window.appState.navigate('/profile');
           } catch (err) {
             alert("Failed to delete board: " + err.message);
             deleteBtn.disabled = false;

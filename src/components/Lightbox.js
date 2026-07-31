@@ -94,14 +94,17 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
   const closeLightbox = () => {
     if (lightboxModal) {
       lightboxModal.classList.remove('show');
-      // Update hash to remove active pin without reloading page
-      const currentHash = window.location.hash;
-      if (currentHash.includes('pin=')) {
-        window.location.hash = currentHash.replace(/[&?]pin=[^&]+/g, '');
+      
+      const currentPath = window.location.pathname;
+      const currentSearch = window.location.search;
+      
+      if (currentSearch.includes('pin=')) {
+        const params = new URLSearchParams(currentSearch);
+        params.delete('pin');
+        const newSearch = params.toString();
+        window.appState.navigate(currentPath + (newSearch ? '?' + newSearch : ''), true);
       } else {
-        // Fallback: strip query or redirect to previous view
-        const targetView = currentHash.split('?')[0];
-        window.location.hash = targetView || 'home';
+        window.appState.navigate(currentPath || '/', true);
       }
     }
     if (callbacks.onClose) callbacks.onClose();

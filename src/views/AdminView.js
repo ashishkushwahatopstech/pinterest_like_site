@@ -35,7 +35,7 @@ export const AdminView = {
           <span class="material-icons-outlined" style="font-size: 4rem; color: #ef4444; margin-bottom: 16px;">gpp_bad</span>
           <h2 style="font-size: 1.6rem; margin-bottom: 8px;">Access Denied</h2>
           <p style="color: var(--text-secondary); margin-bottom: 24px;">You must be an administrator to access this page.</p>
-          <a href="#home" class="btn btn-primary">Go Home</a>
+          <a href="/" class="btn btn-primary">Go Home</a>
         </div>
       `;
       return;
@@ -309,7 +309,7 @@ export const AdminView = {
       return `
         <tr id="img-row-${img.id}">
           <td>
-            <img src="${thumbUrl}" style="width: 50px; height: 50px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color); cursor: pointer;" onclick="window.location.hash='#admin?pin=${img.id}'">
+            <img src="${thumbUrl}" style="width: 50px; height: 50px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color); cursor: pointer;" onclick="window.appState.navigate('/admin?pin=${img.id}')">
           </td>
           <td>
             <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${img.title}</div>

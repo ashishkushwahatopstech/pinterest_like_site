@@ -150,15 +150,15 @@ export const HomeView = {
 
     // Attach click events to filters
     document.getElementById('filter-all-btn').onclick = () => {
-      window.location.hash = this.searchQuery ? `home?q=${this.searchQuery}` : 'home';
+      window.appState.navigate(this.searchQuery ? `/?q=${encodeURIComponent(this.searchQuery)}` : '/');
     };
 
     filterContainer.querySelectorAll('.filter-board-btn').forEach(btn => {
       btn.onclick = () => {
         const boardId = btn.dataset.id;
-        let hash = `home?boardId=${boardId}`;
-        if (this.searchQuery) hash += `&q=${this.searchQuery}`;
-        window.location.hash = hash;
+        let url = `/?boardId=${boardId}`;
+        if (this.searchQuery) url += `&q=${encodeURIComponent(this.searchQuery)}`;
+        window.appState.navigate(url);
       };
     });
   },
@@ -175,10 +175,11 @@ export const HomeView = {
       setupGridEvents(
         gridEl,
         (pinId) => {
-          // Open lightbox by adding pin parameter to hash
-          const currentHash = window.location.hash || '#home';
-          const connector = currentHash.includes('?') ? '&' : '?';
-          window.location.hash = `${currentHash}${connector}pin=${pinId}`;
+          // Open lightbox by adding pin parameter to path URL query
+          const currentPath = window.location.pathname;
+          const currentSearch = window.location.search;
+          const connector = currentSearch.includes('?') ? '&' : '?';
+          window.appState.navigate(`${currentPath}${currentSearch}${connector}pin=${pinId}`);
         },
         async (pinId, likeBtn) => {
           // Fire like trigger
@@ -198,11 +199,11 @@ export const HomeView = {
 
   handleGlobalSearch: function(query) {
     this.searchQuery = query;
-    let hash = 'home';
-    if (query) hash += `?q=${encodeURIComponent(query)}`;
+    let url = '/';
+    if (query) url += `?q=${encodeURIComponent(query)}`;
     if (this.selectedBoardId) {
-      hash += (query ? '&' : '?') + `boardId=${this.selectedBoardId}`;
+      url += (query ? '&' : '?') + `boardId=${this.selectedBoardId}`;
     }
-    window.location.hash = hash;
+    window.appState.navigate(url);
   }
 };

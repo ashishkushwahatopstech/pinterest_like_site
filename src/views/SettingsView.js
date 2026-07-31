@@ -9,7 +9,7 @@ export const SettingsView = {
   render: async function() {
     const user = window.appState?.currentUser;
     if (!user) {
-      window.location.hash = 'home';
+      window.appState.navigate('/');
       return;
     }
 

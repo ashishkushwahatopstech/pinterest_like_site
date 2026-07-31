@@ -14,7 +14,7 @@ export const renderHeader = (user, isAdmin, currentRoute) => {
           <button id="menu-toggle-btn" class="btn btn-icon btn-glass" style="display: flex;" aria-label="Open menu">
             <span class="material-icons-outlined">menu</span>
           </button>
-          <a href="#home" class="brand">
+          <a href="/" class="brand">
             <span class="material-icons-outlined" style="-webkit-text-fill-color: initial; background: var(--accent-gradient); -webkit-background-clip: text; color: var(--accent-primary); font-size: 2rem;">palette</span>
             <span>PinGrid</span>
           </a>
@@ -48,16 +48,16 @@ export const renderHeader = (user, isAdmin, currentRoute) => {
                   <div style="color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;">${user.email}</div>
                 </div>
                 <div class="dropdown-divider"></div>
-                <a href="#profile" class="dropdown-item">
+                <a href="/profile" class="dropdown-item">
                   <span class="material-icons-outlined" style="font-size: 1.2rem;">person</span>
                   <span>My Profile</span>
                 </a>
-                <a href="#settings" class="dropdown-item">
+                <a href="/settings" class="dropdown-item">
                   <span class="material-icons-outlined" style="font-size: 1.2rem;">settings</span>
                   <span>Settings</span>
                 </a>
                 ${isAdmin ? `
-                  <a href="#admin" class="dropdown-item" style="color: var(--accent-primary);">
+                  <a href="/admin" class="dropdown-item" style="color: var(--accent-primary);">
                     <span class="material-icons-outlined" style="font-size: 1.2rem;">admin_panel_settings</span>
                     <span>Admin Panel</span>
                   </a>
@@ -117,7 +117,7 @@ export const setupHeaderEvents = (user, onSearch) => {
     logoutBtn.addEventListener('click', async () => {
       try {
         await logout();
-        window.location.hash = 'home';
+        window.appState.navigate('/');
       } catch (err) {
         alert("Logout failed: " + err.message);
       }

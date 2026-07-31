@@ -28,6 +28,15 @@ window.appState = {
   },
   googleCodeClient: null,
   
+  navigate: (path, replace = false) => {
+    if (replace) {
+      window.history.replaceState({}, '', path);
+    } else {
+      window.history.pushState({}, '', path);
+    }
+    route();
+  },
+  
   // Expose triggers
   showCreateBoard: () => {
     showCreateBoardModal(async (name, isPublic) => {
@@ -483,24 +492,25 @@ const updateDrawerNav = (activePath) => {
 };
 
 // --- APPLICATION ROUTING ENGINES ---
-const parseHash = () => {
-  const hash = window.location.hash.substring(1) || 'home';
-  const [path, queryString] = hash.split('?');
+const parseUrl = () => {
+  const path = window.location.pathname;
+  const queryString = window.location.search;
   
-  // Parse query properties
   const query = {};
   if (queryString) {
-    queryString.split('&').forEach(pair => {
-      const [key, val] = pair.split('=');
-      query[decodeURIComponent(key)] = decodeURIComponent(val || '');
-    });
+    const params = new URLSearchParams(queryString);
+    for (const [key, val] of params.entries()) {
+      query[key] = val;
+    }
   }
 
-  return { path, query };
+  let cleanPath = path.replace(/^\/+|\/+$/g, '');
+  if (cleanPath === '') cleanPath = 'home';
+  return { path: cleanPath, query };
 };
 
-const route = async () => {
-  const { path, query } = parseHash();
+async function route() {
+  const { path, query } = parseUrl();
   
   // Close drawer nav
   updateDrawerNav(path);
@@ -546,7 +556,7 @@ const route = async () => {
   } else if (path === 'admin') {
     await AdminView.render();
   } else {
-    window.location.hash = 'home';
+    window.appState.navigate('/', true);
   }
 
   // Handle lightbox detail parameter
@@ -556,7 +566,7 @@ const route = async () => {
     const wrapper = document.getElementById('lightbox-wrapper');
     if (wrapper) wrapper.innerHTML = '';
   }
-};
+}
 
 // --- APPLICATION INITIALIZATION ---
 const initApp = async () => {
@@ -576,7 +586,7 @@ const initApp = async () => {
     const modalsWrapper = document.getElementById('modals-wrapper');
     
     if (headerWrapper) {
-      headerWrapper.innerHTML = renderHeader(user, false, parseHash().path);
+      headerWrapper.innerHTML = renderHeader(user, false, parseUrl().path);
     }
     if (modalsWrapper) {
       modalsWrapper.innerHTML = renderModalsHtml();
@@ -609,7 +619,7 @@ const initApp = async () => {
 
         // Update header and mobile menu with admin visibility
         if (headerWrapper) {
-          headerWrapper.innerHTML = renderHeader(user, window.appState.isAdmin, parseHash().path);
+          headerWrapper.innerHTML = renderHeader(user, window.appState.isAdmin, parseUrl().path);
         }
         
         const adminLink = document.getElementById('drawer-link-admin');
@@ -672,7 +682,20 @@ const initApp = async () => {
   });
 
   // 5. Watch for route changes
-  window.addEventListener('hashchange', route);
+  window.addEventListener('popstate', route);
+
+  // Global clean links interceptor
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('a');
+    if (link) {
+      const href = link.getAttribute('href');
+      // Only intercept local relative links (starting with / and not external/hash)
+      if (href && href.startsWith('/') && !href.startsWith('//')) {
+        e.preventDefault();
+        window.appState.navigate(href);
+      }
+    }
+  });
 
   // 6. Init Google OAuth
   initGoogleOAuthClient();

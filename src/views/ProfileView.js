@@ -14,7 +14,7 @@ export const ProfileView = {
   render: async function() {
     const user = window.appState?.currentUser;
     if (!user) {
-      window.location.hash = 'home';
+      window.appState.navigate('/');
       return;
     }
 
@@ -185,7 +185,7 @@ export const ProfileView = {
     html += `
       <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
         ${this.boards.map(b => `
-          <a href="#board/${b.id}" class="glass board-card" style="padding: 24px; border-radius: var(--radius-md); display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; transition: var(--transition-fast); cursor: pointer; border: 1px solid var(--border-color);">
+          <a href="/board/${b.id}" class="glass board-card" style="padding: 24px; border-radius: var(--radius-md); display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; transition: var(--transition-fast); cursor: pointer; border: 1px solid var(--border-color);">
             <div>
               <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px;">
                 <h3 style="font-size: 1.25rem; font-family: var(--font-heading); color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">${b.name}</h3>
@@ -228,7 +228,7 @@ export const ProfileView = {
         ${likedImages.map(img => {
           const imageUrl = `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
           return `
-            <div class="pin-card" style="aspect-ratio: 1; position: relative; cursor: pointer; border-radius: var(--radius-md);" class="liked-pin-item" onclick="window.location.hash = '#profile?pin=${img.id}'">
+            <div class="pin-card" style="aspect-ratio: 1; position: relative; cursor: pointer; border-radius: var(--radius-md);" class="liked-pin-item" onclick="window.appState.navigate('/profile?pin=${img.id}')">
               <img src="${imageUrl}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy">
               <div class="pin-overlay" style="opacity: 0; hover: opacity: 1;">
                 <div class="pin-bottom-info" style="position: absolute; bottom: 12px; left: 12px; right: 12px;">
