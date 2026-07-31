@@ -226,7 +226,7 @@ export const ProfileView = {
     return `
       <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
         ${likedImages.map(img => {
-          const imageUrl = `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
+          const imageUrl = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
           return `
             <div class="pin-card" style="aspect-ratio: 1; position: relative; cursor: pointer; border-radius: var(--radius-md);" class="liked-pin-item" onclick="window.appState.navigate('/profile?pin=${img.id}')">
               <img src="${imageUrl}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy">

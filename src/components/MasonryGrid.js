@@ -13,7 +13,7 @@ export const renderMasonryGrid = (images, hasMore = false) => {
 
   const itemsHtml = images.map(img => {
     // Generate direct image source from Google Drive file ID
-    const imageUrl = `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
+    const imageUrl = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
     
     return `
       <div class="masonry-item animate-fade" data-id="${img.id}">

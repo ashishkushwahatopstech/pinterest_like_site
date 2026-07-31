@@ -305,7 +305,7 @@ export const AdminView = {
     }
 
     return imageList.map(img => {
-      const thumbUrl = `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
+      const thumbUrl = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
       return `
         <tr id="img-row-${img.id}">
           <td>

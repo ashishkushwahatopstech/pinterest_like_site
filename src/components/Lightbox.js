@@ -4,7 +4,7 @@ import { getGoogleDriveToken } from '../services/api';
 export const renderLightbox = (img, currentUser, isAdmin) => {
   if (!img) return '';
 
-  const imageUrl = `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
+  const imageUrl = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
   const isOwner = currentUser && currentUser.uid === img.user_id;
   const canDelete = isOwner || isAdmin;
 
