@@ -38,7 +38,9 @@ export const renderFooter = (siteName = "PinGrid") => {
           <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.85rem;">
             <a href="/profile" onclick="event.preventDefault(); window.appState.navigate('/profile')" style="color: var(--text-secondary); transition: color 0.2s;" onmouseover="this.style.color='var(--accent-primary)'" onmouseout="this.style.color='var(--text-secondary)'">Creator Profile</a>
             <a href="/settings" onclick="event.preventDefault(); window.appState.navigate('/settings')" style="color: var(--text-secondary); transition: color 0.2s;" onmouseover="this.style.color='var(--accent-primary)'" onmouseout="this.style.color='var(--text-secondary)'">Folder Settings</a>
-            <a href="/admin" onclick="event.preventDefault(); window.appState.navigate('/admin')" style="color: var(--text-secondary); transition: color 0.2s;" onmouseover="this.style.color='var(--accent-primary)'" onmouseout="this.style.color='var(--text-secondary)'">Admin Panel</a>
+            ${window.appState?.isAdmin ? `
+              <a href="/admin" onclick="event.preventDefault(); window.appState.navigate('/admin')" style="color: var(--text-secondary); transition: color 0.2s;" onmouseover="this.style.color='var(--accent-primary)'" onmouseout="this.style.color='var(--text-secondary)'">Admin Panel</a>
+            ` : ''}
           </div>
         </div>
       </div>

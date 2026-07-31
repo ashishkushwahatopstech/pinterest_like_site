@@ -873,7 +873,11 @@ async function route() {
   } else if (path === 'settings') {
     await SettingsView.render();
   } else if (path === 'admin') {
-    await AdminView.render();
+    if (!window.appState.isAdmin) {
+      window.appState.navigate('/', true);
+    } else {
+      await AdminView.render();
+    }
   } else if (path === 'privacy') {
     await InfoView.render({ type: 'privacy' });
   } else if (path === 'terms') {
@@ -925,12 +929,16 @@ const initApp = async () => {
     // Show header in loading state
     const headerWrapper = document.getElementById('header-wrapper');
     const modalsWrapper = document.getElementById('modals-wrapper');
+    const footerWrapper = document.getElementById('footer-wrapper');
     
     if (headerWrapper) {
       headerWrapper.innerHTML = renderHeader(user, false, parseUrl().path);
     }
     if (modalsWrapper) {
       modalsWrapper.innerHTML = renderModalsHtml();
+    }
+    if (footerWrapper) {
+      footerWrapper.innerHTML = renderFooter(window.appState.siteSettings?.site_name || 'PinGrid');
     }
 
     if (user) {
@@ -963,6 +971,12 @@ const initApp = async () => {
         if (headerWrapper) {
           headerWrapper.innerHTML = renderHeader(user, window.appState.isAdmin, parseUrl().path);
         }
+        
+        // Re-render footer to reflect correct Admin visibility
+        const footerWrapper = document.getElementById('footer-wrapper');
+        if (footerWrapper) {
+          footerWrapper.innerHTML = renderFooter(window.appState.siteSettings?.site_name || 'PinGrid');
+        }
 
         // Check Google Drive storage connection
         const driveToken = await getGoogleDriveToken();
@@ -986,6 +1000,10 @@ const initApp = async () => {
         alert(err.message || "Failed to register profile. Signups may be closed by the site administrator.");
         await logout();
         updateDrawerHTML(null, false);
+        const footerWrapper = document.getElementById('footer-wrapper');
+        if (footerWrapper) {
+          footerWrapper.innerHTML = renderFooter(window.appState.siteSettings?.site_name || 'PinGrid');
+        }
         return;
       }
     } else {
