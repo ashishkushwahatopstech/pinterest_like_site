@@ -37,10 +37,24 @@ export const renderHeader = (user, isAdmin, currentRoute) => {
           </button>
 
           ${user ? `
-            <button id="header-upload-btn" class="btn btn-primary">
-              <span class="material-icons-outlined" style="font-size: 1.2rem;">add</span>
-              <span class="btn-text-responsive" style="margin-left: 4px;">Create</span>
-            </button>
+            <div class="custom-dropdown create-dropdown-container" style="position: relative; display: inline-block;">
+              <button id="header-add-dropdown-btn" class="btn btn-primary" style="display: flex; align-items: center; gap: 4px; cursor: pointer; padding: 10px 16px;">
+                <span class="material-icons-outlined" style="font-size: 1.2rem;">add</span>
+                <span style="font-weight: 600;">Add</span>
+                <span class="material-icons-outlined" style="font-size: 1rem; margin-left: 2px;">expand_more</span>
+              </button>
+              
+              <div class="dropdown-menu glass" id="header-add-dropdown-menu" style="right: 0; min-width: 180px; display: none; flex-direction: column; gap: 4px; padding: 6px; border-radius: var(--radius-md); box-shadow: var(--glass-shadow); border: 1px solid var(--border-color); background: var(--glass-bg); z-index: 400; position: absolute; top: calc(100% + 8px);">
+                <button class="dropdown-item" id="header-create-board-option" style="width: 100%; text-align: left; display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.85rem; padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-primary); background: none; border: none;">
+                  <span class="material-icons-outlined" style="font-size: 1.15rem; color: var(--accent-primary);">folder</span>
+                  <span>Create Board</span>
+                </button>
+                <button class="dropdown-item" id="header-upload-image-option" style="width: 100%; text-align: left; display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.85rem; padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-primary); background: none; border: none;">
+                  <span class="material-icons-outlined" style="font-size: 1.15rem; color: var(--accent-primary);">add_photo_alternate</span>
+                  <span>Upload Image</span>
+                </button>
+              </div>
+            </div>
             
             <div class="user-menu" id="user-menu-container">
               <button class="avatar-btn" id="avatar-toggle-btn" aria-label="User menu">
@@ -198,6 +212,73 @@ export const setupHeaderEvents = (user, onSearch) => {
         searchInput.value = '';
         clearBtn.style.display = 'none';
         onSearch('');
+      });
+    }
+  }
+
+  // + Add dropdown toggle event bindings
+  const addBtn = document.getElementById('header-add-dropdown-btn');
+  const addMenu = document.getElementById('header-add-dropdown-menu');
+  const addContainer = document.querySelector('.create-dropdown-container');
+
+  if (addBtn && addMenu && addContainer) {
+    const showMenu = () => {
+      addMenu.style.display = 'flex';
+      const arrowIcon = addBtn.querySelector('.material-icons-outlined:last-child');
+      if (arrowIcon) arrowIcon.textContent = 'expand_less';
+    };
+    const hideMenu = () => {
+      addMenu.style.display = 'none';
+      const arrowIcon = addBtn.querySelector('.material-icons-outlined:last-child');
+      if (arrowIcon) arrowIcon.textContent = 'expand_more';
+    };
+
+    // Hover triggers (only on larger desktop viewports)
+    addContainer.addEventListener('mouseenter', () => {
+      if (window.innerWidth >= 768) showMenu();
+    });
+    addContainer.addEventListener('mouseleave', () => {
+      if (window.innerWidth >= 768) hideMenu();
+    });
+
+    // Touch/Click triggers (for mobile and fallbacks)
+    addBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isVisible = addMenu.style.display === 'flex';
+      if (isVisible) {
+        hideMenu();
+      } else {
+        showMenu();
+      }
+    });
+
+    // Close on outer screen click
+    document.addEventListener('click', (e) => {
+      if (!addContainer.contains(e.target)) {
+        hideMenu();
+      }
+    });
+
+    // Sub-option triggers
+    const createBoardOpt = document.getElementById('header-create-board-option');
+    if (createBoardOpt) {
+      createBoardOpt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideMenu();
+        if (window.appState && window.appState.showCreateBoard) {
+          window.appState.showCreateBoard();
+        }
+      });
+    }
+
+    const uploadImageOpt = document.getElementById('header-upload-image-option');
+    if (uploadImageOpt) {
+      uploadImageOpt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideMenu();
+        if (window.appState && window.appState.showUpload) {
+          window.appState.showUpload();
+        }
       });
     }
   }
