@@ -1735,6 +1735,10 @@ body.dark-theme .drawer {
   .header-container #user-menu-container {
     display: none !important;
   }
+  
+  #header-add-dropdown-menu {
+    right: -12px !important;
+  }
 }
 
 /* Appearance Settings customization elements */
