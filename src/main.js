@@ -3,6 +3,7 @@ import { subscribeToAuth, loginWithGoogle, logout } from './services/auth';
 import { getSupabase, supabasePublic, isUserAdmin } from './services/supabase';
 import { getGoogleDriveToken, connectGoogleDrive } from './services/api';
 import { getRootFolder, getOrCreateBoardFolder, uploadFileToDrive, makeFilePublic, deleteFromDrive } from './services/drive';
+import { trackUserSearch, trackUserView, trackUserLike, getRelatedRecommendations } from './services/recommendations';
 
 // Views
 import { HomeView } from './views/HomeView';
@@ -267,6 +268,24 @@ window.appState = {
         if (likeErr) throw likeErr;
         
         response = await supabase.rpc('increment_likes', { image_uuid: pinId });
+
+        // Track like interest
+        try {
+          const { data: img } = await supabase
+            .from('images')
+            .select('title, description, boards(name)')
+            .eq('id', pinId)
+            .single();
+          if (img) {
+            trackUserLike({
+              title: img.title,
+              description: img.description,
+              boards: img.boards
+            });
+          }
+        } catch (trackErr) {
+          console.warn("Failed to track interest for like:", trackErr);
+        }
       }
 
       const updatedCount = response.data?.likes_count ?? 0;
@@ -370,6 +389,9 @@ const openLightboxOverlay = async (imageId) => {
 
     if (error || !data) return;
 
+    // Track view interest
+    trackUserView(data);
+
     wrapper.innerHTML = renderLightbox(data, window.appState.currentUser, window.appState.isAdmin);
     
     setupLightboxEvents(data, window.appState.currentUser, window.appState.isAdmin, {
@@ -448,6 +470,9 @@ const openLightboxOverlay = async (imageId) => {
         }
 
         if (relatedImages && relatedImages.length > 0) {
+          // Sort related images based on content similarity and user interests
+          relatedImages = getRelatedRecommendations(data, relatedImages);
+
           const relatedSection = document.getElementById('lightbox-related-section');
           const relatedGridContainer = document.getElementById('lightbox-related-grid-container');
           
@@ -650,6 +675,9 @@ async function route() {
 
   // Router views
   if (path.startsWith('home') || path === '') {
+    if (query.q) {
+      trackUserSearch(query.q);
+    }
     await HomeView.render({ boardId: query.boardId, q: query.q });
   } else if (path.startsWith('board/')) {
     const boardId = path.split('/')[1];

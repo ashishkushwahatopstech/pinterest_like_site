@@ -1,6 +1,7 @@
 import { supabasePublic, getSupabase } from '../services/supabase';
 import { renderMasonryGrid, setupGridEvents, setupInfiniteScroll } from '../components/MasonryGrid';
 import { renderPinSkeleton } from '../components/Skeleton';
+import { sortRecommendedFeed, trackUserSearch } from '../services/recommendations';
 
 const PAGE_SIZE = 15;
 
@@ -166,7 +167,7 @@ export const HomeView = {
         if (currentFetchId !== this.activeFetchId) return;
 
         if (this.page === 0) {
-          this.images = fetchedData;
+          this.images = sortRecommendedFeed(fetchedData);
         } else {
           this.images = [...this.images, ...fetchedData];
         }
@@ -358,6 +359,9 @@ export const HomeView = {
 
     const handleFilterChange = async () => {
       this.searchQuery = searchInp ? searchInp.value.trim() : '';
+      if (this.searchQuery) {
+        trackUserSearch(this.searchQuery);
+      }
       
       const params = new URLSearchParams();
       if (this.searchQuery) params.set('q', this.searchQuery);
