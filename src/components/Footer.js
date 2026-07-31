@@ -7,10 +7,10 @@ export const renderFooter = (siteName = "PinGrid") => {
           <span style="font-weight: 700; font-family: var(--font-heading); color: var(--text-primary);">${siteName}</span>
         </div>
         <div class="footer-links">
-          <a href="#home">Explore</a>
-          <a href="#about" style="pointer-events: none; opacity: 0.5;">About</a>
-          <a href="#terms" style="pointer-events: none; opacity: 0.5;">Terms</a>
-          <a href="#privacy" style="pointer-events: none; opacity: 0.5;">Privacy</a>
+          <a href="/" onclick="event.preventDefault(); window.appState.navigate('/')">Explore</a>
+          <a href="/about" onclick="event.preventDefault(); window.appState.navigate('/about')">About Us</a>
+          <a href="/terms" onclick="event.preventDefault(); window.appState.navigate('/terms')">Terms</a>
+          <a href="/privacy" onclick="event.preventDefault(); window.appState.navigate('/privacy')">Privacy Policy</a>
         </div>
         <div>
           &copy; ${new Date().getFullYear()} ${siteName}. All rights reserved.

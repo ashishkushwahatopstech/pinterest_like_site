@@ -11,6 +11,7 @@ import { BoardView } from './views/BoardView';
 import { ProfileView } from './views/ProfileView';
 import { AdminView } from './views/AdminView';
 import { SettingsView } from './views/SettingsView';
+import { InfoView } from './views/InfoView';
 
 // Components
 import { renderHeader, setupHeaderEvents } from './components/Header';
@@ -724,6 +725,12 @@ async function route() {
     await SettingsView.render();
   } else if (path === 'admin') {
     await AdminView.render();
+  } else if (path === 'privacy') {
+    await InfoView.render({ type: 'privacy' });
+  } else if (path === 'terms') {
+    await InfoView.render({ type: 'terms' });
+  } else if (path === 'about') {
+    await InfoView.render({ type: 'about' });
   } else {
     window.appState.navigate('/', true);
   }

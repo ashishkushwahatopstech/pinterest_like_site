@@ -9,6 +9,9 @@ export const AdminView = {
   images: [],
   boards: [],
   trendingBoardIds: [],
+  moderationPage: 0,
+  moderationPageSize: 10,
+  moderationHasMore: false,
   stats: {
     totalUsers: 0,
     totalImages: 0,
@@ -26,7 +29,7 @@ export const AdminView = {
     container.innerHTML = `
       <div class="container animate-fade" style="padding-top: 40px;">
         <h1 style="font-size: 2rem; margin-bottom: 24px;">Admin Control Panel</h1>
-        ${renderAdminSkeleton()}
+        \${renderAdminSkeleton()}
       </div>
     `;
 
@@ -43,6 +46,11 @@ export const AdminView = {
       `;
       return;
     }
+
+    // Reset pagination
+    this.moderationPage = 0;
+    this.images = [];
+    this.moderationHasMore = false;
 
     // Update browser title and Open Graph tags for SEO
     if (window.appState.updateSEO) {
@@ -106,16 +114,27 @@ export const AdminView = {
     }
   },
 
-  fetchImages: async function() {
+  fetchImages: async function(append = false) {
     try {
       const supabase = await getSupabase();
+      const from = this.moderationPage * this.moderationPageSize;
+      const to = from + this.moderationPageSize - 1;
+
       const { data, error } = await supabase
         .from('images')
         .select('*, users!images_user_id_fkey(*), boards(*)')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (error) throw error;
-      this.images = data || [];
+      
+      const newImages = data || [];
+      if (append) {
+        this.images = [...this.images, ...newImages];
+      } else {
+        this.images = newImages;
+      }
+      this.moderationHasMore = newImages.length === this.moderationPageSize;
     } catch (err) {
       console.error("Error fetching admin images:", err);
     }
@@ -245,7 +264,7 @@ export const AdminView = {
 
             <!-- Content Section (Hidden initially) -->
             <div id="admin-content-panel" style="display: none;">
-              <div class="admin-table-wrapper">
+              <div class="admin-table-wrapper" style="max-height: 480px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0;">
                 <table class="admin-table">
                   <thead>
                     <tr>
@@ -260,6 +279,9 @@ export const AdminView = {
                     ${this.renderContentRows(this.images)}
                   </tbody>
                 </table>
+              </div>
+              <div style="display: flex; justify-content: center; margin-top: 16px;">
+                <button id="admin-moderation-load-more" class="btn btn-secondary btn-sm" style="display: none; width: 100%; max-width: 200px; cursor: pointer;">Show More</button>
               </div>
             </div>
 
@@ -333,7 +355,10 @@ export const AdminView = {
           <div style="display: flex; align-items: center; gap: 12px;">
             <img src="${u.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
             <div>
-              <div style="font-weight: 600;">${u.display_name || 'Creator'}</div>
+              <div style="font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                <span>${u.display_name || 'Creator'}</span>
+                ${u.is_admin ? `<span class="material-icons-outlined" style="font-size: 1rem; color: var(--accent-primary);" title="Admin Access">verified_user</span>` : ''}
+              </div>
               <div style="font-size: 0.75rem; color: var(--text-secondary);">${u.email}</div>
             </div>
           </div>
@@ -345,9 +370,12 @@ export const AdminView = {
           </span>
         </td>
         <td>
-          <div style="display: flex; gap: 6px;">
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
             <button class="btn btn-glass btn-sm btn-suspend" data-id="${u.id}" data-status="${u.is_suspended}" style="padding: 4px 10px; font-size: 0.75rem;">
               ${u.is_suspended ? 'Reactivate' : 'Suspend'}
+            </button>
+            <button class="btn btn-glass btn-sm btn-toggle-admin" data-id="${u.id}" data-admin="${u.is_admin}" style="padding: 4px 10px; font-size: 0.75rem; border-color: ${u.is_admin ? 'var(--accent-primary)' : 'var(--border-color)'}; color: ${u.is_admin ? 'var(--accent-primary)' : 'var(--text-secondary)'};">
+              ${u.is_admin ? 'Revoke Admin' : 'Make Admin'}
             </button>
             <button class="btn btn-danger btn-sm btn-delete-user" data-id="${u.id}" style="padding: 4px 10px; font-size: 0.75rem;">
               Delete DB
@@ -493,6 +521,30 @@ export const AdminView = {
       };
     }
 
+    // Moderation Queue Show More click event
+    const loadMoreBtn = document.getElementById('admin-moderation-load-more');
+    if (loadMoreBtn) {
+      loadMoreBtn.style.display = this.moderationHasMore ? 'block' : 'none';
+      
+      loadMoreBtn.onclick = async () => {
+        loadMoreBtn.disabled = true;
+        loadMoreBtn.textContent = 'Loading...';
+        
+        this.moderationPage++;
+        await this.fetchImages(true); // Fetch and append
+        
+        const tbody = document.getElementById('admin-content-rows');
+        if (tbody) {
+          tbody.innerHTML = this.renderContentRows(this.images);
+          this.attachContentActionEvents(); // re-bind hides/publishes
+        }
+        
+        loadMoreBtn.disabled = false;
+        loadMoreBtn.textContent = 'Show More';
+        loadMoreBtn.style.display = this.moderationHasMore ? 'block' : 'none';
+      };
+    }
+
     this.attachUserActionEvents();
     this.attachContentActionEvents();
     this.attachBoardActionEvents();
@@ -563,6 +615,50 @@ export const AdminView = {
           }
         } catch (err) {
           alert("Failed to update user status: " + err.message);
+        } finally {
+          btn.disabled = false;
+        }
+      };
+    });
+
+    // Toggle Admin status handler
+    document.querySelectorAll('.btn-toggle-admin').forEach(btn => {
+      btn.onclick = async () => {
+        const userId = btn.dataset.id;
+        const isAdmin = btn.dataset.admin === 'true';
+        const newStatus = !isAdmin;
+        
+        const currentUser = window.appState?.currentUser;
+        if (currentUser && currentUser.uid === userId && isAdmin) {
+          alert("You cannot revoke admin privileges from yourself!");
+          return;
+        }
+
+        btn.disabled = true;
+        
+        try {
+          const supabase = await supabaseCaller();
+          const { error } = await supabase
+            .from('users')
+            .update({ is_admin: newStatus })
+            .eq('id', userId);
+
+          if (error) throw error;
+          
+          alert(`User successfully ${newStatus ? 'promoted to admin' : 'demoted from admin'}.`);
+          btn.dataset.admin = newStatus.toString();
+          btn.textContent = newStatus ? 'Revoke Admin' : 'Make Admin';
+          btn.style.borderColor = newStatus ? 'var(--accent-primary)' : 'var(--border-color)';
+          btn.style.color = newStatus ? 'var(--accent-primary)' : 'var(--text-secondary)';
+          
+          await this.fetchUsers();
+          const tbody = document.getElementById('admin-user-rows');
+          if (tbody) {
+            tbody.innerHTML = this.renderUserRows(this.users);
+            this.attachUserActionEvents();
+          }
+        } catch (err) {
+          alert("Failed to toggle admin status: " + err.message);
         } finally {
           btn.disabled = false;
         }
