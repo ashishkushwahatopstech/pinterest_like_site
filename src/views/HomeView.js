@@ -281,7 +281,12 @@ export const HomeView = {
                         </div>
                       `;
                       html += trending.map(b => `
-                        <div class="dropdown-option ${this.selectedBoardId === b.id ? 'selected' : ''}" data-value="${b.id}" style="padding-left: 20px;">${b.name}</div>
+                        <div class="dropdown-option ${this.selectedBoardId === b.id ? 'selected' : ''}" data-value="${b.id}" style="padding-left: 20px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                          <span>${b.name}</span>
+                          <svg style="width: 14px; height: 14px; fill: #ff3366; flex-shrink: 0;" viewBox="0 0 24 24">
+                            <path d="M12,2C11.5,2 11,2.2 10.6,2.6C9.1,4.1 8,6.1 8,8.2C8,10.6 9.4,12.7 11.5,13.7C10.1,13.8 8.8,13.4 7.8,12.5C7.2,12 6.8,11.3 6.6,10.6C6.5,10.1 6.2,9.8 5.7,9.8C5.2,9.8 4.9,10.1 4.8,10.6C4.3,12.6 4.6,14.7 5.7,16.5C7.3,19.3 10.3,21 13.5,21C18.2,21 22,17.2 22,12.5C22,9.2 20.1,6.3 17.2,4.8C16.8,4.6 16.4,4.9 16.4,5.4C16.4,6.2 15.9,7 15.1,7.5C14,8.2 12.8,8.5 11.6,8.2C12.8,6.8 13.5,5.1 13.5,3.3C13.5,2.6 12.8,2 12,2Z"/>
+                          </svg>
+                        </div>
                       `).join('');
                     }
                     
