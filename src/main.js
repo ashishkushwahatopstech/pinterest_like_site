@@ -1,3 +1,8 @@
+// Apply persisted theme immediately to avoid page load flashing
+if (localStorage.getItem('theme_dark') === 'true') {
+  document.body.classList.add('dark-theme');
+}
+
 import './index.css';
 import { subscribeToAuth, loginWithGoogle, logout } from './services/auth';
 import { getSupabase, supabasePublic, isUserAdmin } from './services/supabase';

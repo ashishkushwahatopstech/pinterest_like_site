@@ -118,11 +118,23 @@ export const ProfileView = {
     const email = user.email;
     const avatar = user.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80';
 
+    // Select dynamic cover image from favorite images list or fallback
+    const likedImages = this.likes.map(l => l.images).filter(Boolean);
+    const coverUrl = likedImages.length > 0
+      ? (likedImages[0].drive_view_link || `https://lh3.googleusercontent.com/d/${likedImages[0].drive_file_id}`)
+      : 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1200&q=80';
+
     container.innerHTML = `
-      <div class="container animate-fade" style="padding-top: 40px;">
+      <div class="container animate-fade" style="padding-top: 24px;">
+        <!-- Dynamic Profile Cover Banner -->
+        <div class="profile-cover" style="height: 200px; border-radius: var(--radius-lg); overflow: hidden; position: relative; margin-bottom: -50px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+          <img src="${coverUrl}" style="width: 100%; height: 100%; object-fit: cover; filter: blur(2px) brightness(0.65);" alt="Profile Cover">
+          <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(15,23,42,0.4));"></div>
+        </div>
+
         <!-- Profile info -->
-        <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; margin-bottom: 32px;">
-          <div class="profile-avatar">
+        <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; margin-bottom: 32px; position: relative; z-index: 10;">
+          <div class="profile-avatar" style="border: 4px solid var(--bg-secondary); box-shadow: var(--shadow-md);">
             <img src="${avatar}" alt="Avatar">
           </div>
           <div>

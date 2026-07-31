@@ -30,7 +30,12 @@ export const renderHeader = (user, isAdmin, currentRoute) => {
         </div>
 
         <!-- Action Buttons / User Menu -->
-        <div class="nav-actions">
+        <div class="nav-actions" style="display: flex; align-items: center; gap: 12px;">
+          <!-- Theme Switcher Toggle -->
+          <button id="theme-toggle-btn" class="btn btn-icon btn-glass" style="border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer;" aria-label="Toggle Theme">
+            <span class="material-icons-outlined" id="theme-toggle-icon">dark_mode</span>
+          </button>
+
           ${user ? `
             <button id="header-upload-btn" class="btn btn-primary">
               <span class="material-icons-outlined" style="font-size: 1.2rem;">add</span>
@@ -83,6 +88,31 @@ export const renderHeader = (user, isAdmin, currentRoute) => {
 
 // Hook header events
 export const setupHeaderEvents = (user, onSearch) => {
+  // Setup Theme Switcher Toggle
+  const themeBtn = document.getElementById('theme-toggle-btn');
+  const themeIcon = document.getElementById('theme-toggle-icon');
+  if (themeBtn && themeIcon) {
+    const applyTheme = (isDark) => {
+      if (isDark) {
+        document.body.classList.add('dark-theme');
+        themeIcon.textContent = 'light_mode';
+      } else {
+        document.body.classList.remove('dark-theme');
+        themeIcon.textContent = 'dark_mode';
+      }
+    };
+
+    const isDark = localStorage.getItem('theme_dark') === 'true';
+    applyTheme(isDark);
+
+    themeBtn.onclick = (e) => {
+      e.stopPropagation();
+      const newDark = !document.body.classList.contains('dark-theme');
+      localStorage.setItem('theme_dark', newDark ? 'true' : 'false');
+      applyTheme(newDark);
+    };
+  }
+
   // Sticky header class on scroll
   window.addEventListener('scroll', () => {
     const header = document.querySelector('.site-header');

@@ -17,6 +17,12 @@ export const AdminView = {
     totalImages: 0,
     totalStorageEst: 0,
   },
+  settings: {
+    site_name: 'PinGrid',
+    announcement: '',
+    allow_signups: true
+  },
+  auditLogs: [],
   loading: true,
 
   render: async function() {
@@ -29,7 +35,7 @@ export const AdminView = {
     container.innerHTML = `
       <div class="container animate-fade" style="padding-top: 40px;">
         <h1 style="font-size: 2rem; margin-bottom: 24px;">Admin Control Panel</h1>
-        \${renderAdminSkeleton()}
+        ${renderAdminSkeleton()}
       </div>
     `;
 
@@ -60,10 +66,13 @@ export const AdminView = {
     await Promise.all([
       this.fetchStats(),
       this.fetchUsers(),
-      this.fetchImages(),
+      this.fetchImages(false),
       this.fetchBoards(),
       this.fetchSiteSettings()
     ]);
+
+    // Expose audit logging globally
+    window.appState.logAdminEvent = (action) => this.logAdminEvent(action);
 
     this.loading = false;
     this.renderContent();
@@ -179,65 +188,130 @@ export const AdminView = {
 
       if (error) throw error;
       
-      this.settings = {};
+      this.settings = {
+        site_name: 'PinGrid',
+        announcement: '',
+        allow_signups: true
+      };
+      
       data?.forEach(s => {
-        this.settings[s.key] = s.value;
+        try {
+          this.settings[s.key] = JSON.parse(s.value);
+        } catch (e) {
+          this.settings[s.key] = s.value;
+        }
       });
 
-      if (!('allow_signups' in this.settings)) this.settings.allow_signups = true;
-      if (!('site_name' in this.settings)) this.settings.site_name = 'PinGrid';
-      if (!('announcement' in this.settings)) this.settings.announcement = '';
+      const rawLogs = this.settings.system_audit_logs;
+      this.auditLogs = Array.isArray(rawLogs) ? rawLogs : [];
     } catch (err) {
-      console.error("Error fetching admin settings:", err);
-      this.settings = { allow_signups: true, site_name: 'PinGrid', announcement: '' };
+      console.error("Error fetching site settings:", err);
+    }
+  },
+
+  logAdminEvent: async function(actionText) {
+    try {
+      const supabase = await getSupabase();
+      
+      const { data } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('key', 'system_audit_logs')
+        .single();
+        
+      let logs = [];
+      if (data) {
+        try {
+          logs = JSON.parse(data.value) || [];
+        } catch (e) {
+          logs = [];
+        }
+      }
+      
+      logs.unshift({
+        timestamp: new Date().toISOString(),
+        admin_email: window.appState.currentUser?.email || 'Admin',
+        action: actionText
+      });
+      
+      logs = logs.slice(0, 50); // Cap at 50 logs
+      
+      await supabase
+        .from('site_settings')
+        .upsert({ key: 'system_audit_logs', value: JSON.stringify(logs) });
+      
+      this.auditLogs = logs;
+    } catch (err) {
+      console.warn("Failed to log admin action:", err);
     }
   },
 
   formatBytes: function(bytes) {
-    if (!bytes) return '0 MB';
-    const mb = bytes / (1024 * 1024);
-    if (mb < 1024) return mb.toFixed(1) + ' MB';
-    return (mb / 1024).toFixed(2) + ' GB';
+    if (bytes === null || bytes === undefined) return 'Calculating...';
+    if (bytes === -1) return 'Drive disconnected';
+    if (bytes === 0) return '0 Bytes';
+    
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   },
 
   renderContent: function() {
     const container = document.getElementById(this.containerId);
     if (!container) return;
 
-    container.innerHTML = `
-      <div class="container animate-fade" style="padding-top: 40px;">
-        <h1 style="font-size: 2.2rem; font-family: var(--font-heading); margin-bottom: 24px;">Admin Control Panel</h1>
+    // Calculate dynamic storage percentage
+    const maxStorage = 15 * 1024 * 1024 * 1024; // 15GB
+    const storagePercent = ((this.stats.totalStorageEst / maxStorage) * 100).toFixed(2);
 
-        <!-- Stats Overview Row -->
-        <div class="admin-grid">
-          <div class="stat-card glass">
-            <span class="stat-label">Total Registered Users</span>
-            <span class="stat-val">${this.stats.totalUsers}</span>
+    container.innerHTML = `
+      <div class="container animate-fade" style="padding-top: 40px; padding-bottom: 60px;">
+        <h1 style="font-size: 2.2rem; margin-bottom: 24px; font-family: var(--font-heading); color: var(--text-primary);">Admin Control Panel</h1>
+        
+        <!-- Stats Overview Grid -->
+        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 32px;">
+          <div class="stat-card glass" style="padding: 20px; border-radius: var(--radius-md);">
+            <span class="stat-label" style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Total Users</span>
+            <span class="stat-val" style="display: block; font-size: 1.8rem; font-weight: 700; margin-top: 6px; color: var(--text-primary);">${this.stats.totalUsers}</span>
           </div>
-          <div class="stat-card glass">
-            <span class="stat-label">Total Images Uploaded</span>
-            <span class="stat-val">${this.stats.totalImages}</span>
+          <div class="stat-card glass" style="padding: 20px; border-radius: var(--radius-md);">
+            <span class="stat-label" style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Total Images</span>
+            <span class="stat-val" style="display: block; font-size: 1.8rem; font-weight: 700; margin-top: 6px; color: var(--text-primary);">${this.stats.totalImages}</span>
           </div>
-          <div class="stat-card glass">
-            <span class="stat-label">Est. Aggregate Storage</span>
-            <span class="stat-val">${this.formatBytes(this.stats.totalStorageEst)}</span>
+          <div class="stat-card glass" style="padding: 20px; border-radius: var(--radius-md); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <span class="stat-label" style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Est. Aggregate Storage</span>
+              <span class="stat-val" style="display: block; font-size: 1.8rem; font-weight: 700; margin-top: 6px; color: var(--text-primary);">${this.formatBytes(this.stats.totalStorageEst)}</span>
+            </div>
+            <!-- Progress Bar -->
+            <div style="margin-top: 12px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 4px;">
+                <span>Usage (vs 15GB Drive Limit)</span>
+                <span>${storagePercent}%</span>
+              </div>
+              <div style="width: 100%; height: 6px; background: var(--bg-primary); border-radius: 3px; overflow: hidden; border: 1px solid var(--border-color);">
+                <div style="height: 100%; width: ${Math.min(storagePercent, 100)}%; background: var(--accent-gradient);"></div>
+              </div>
+            </div>
           </div>
-          <div class="stat-card glass">
-            <span class="stat-label">Signups Status</span>
-            <span class="stat-val" style="color: ${this.settings.allow_signups ? '#22c55e' : '#ef4444'}; font-size: 1.5rem; margin-top: 6px;">
+          <div class="stat-card glass" style="padding: 20px; border-radius: var(--radius-md);">
+            <span class="stat-label" style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Signups Status</span>
+            <span class="stat-val" style="display: block; font-size: 1.4rem; font-weight: 700; margin-top: 6px; color: ${this.settings.allow_signups ? '#22c55e' : '#ef4444'};">
               ${this.settings.allow_signups ? 'ALLOWING SIGNUPS' : 'SIGNUPS DISABLED'}
             </span>
           </div>
         </div>
 
         <!-- Admin Views Tabs / Layout -->
-        <div class="admin-layout">
+        <div class="admin-layout" style="display: flex; gap: 24px; flex-wrap: wrap;">
           <!-- User, Content, and Boards lists -->
-          <div class="glass" style="padding: 28px; border-radius: var(--radius-lg); flex: 1; overflow-x: auto;">
-            <div class="tabs-container" style="margin-bottom: 20px; display: flex; gap: 8px; flex-wrap: wrap;">
-              <button class="tab-btn active" id="admin-tab-users">User Directory</button>
-              <button class="tab-btn" id="admin-tab-content">Moderation Queue</button>
-              <button class="tab-btn" id="admin-tab-boards">Boards Directory</button>
+          <div class="glass" style="padding: 28px; border-radius: var(--radius-lg); flex: 2; overflow-x: auto; min-width: 320px;">
+            <div class="tabs-container" style="margin-bottom: 20px; display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+              <button class="tab-btn active" id="admin-tab-users" style="cursor: pointer;">User Directory</button>
+              <button class="tab-btn" id="admin-tab-content" style="cursor: pointer;">Moderation Queue</button>
+              <button class="tab-btn" id="admin-tab-boards" style="cursor: pointer;">Boards Directory</button>
+              <button class="tab-btn" id="admin-tab-logs" style="cursor: pointer;">System Audit Logs</button>
             </div>
 
             <!-- Users Section -->
@@ -264,6 +338,9 @@ export const AdminView = {
 
             <!-- Content Section (Hidden initially) -->
             <div id="admin-content-panel" style="display: none;">
+              <div class="form-group" style="margin-bottom: 20px;">
+                <input type="text" id="admin-content-search" class="form-control" placeholder="Search moderation queue by title, board, or uploader email...">
+              </div>
               <div class="admin-table-wrapper" style="max-height: 480px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0;">
                 <table class="admin-table">
                   <thead>
@@ -304,32 +381,52 @@ export const AdminView = {
                 </table>
               </div>
             </div>
+
+            <!-- Audit Logs Section (Hidden initially) -->
+            <div id="admin-logs-panel" style="display: none;">
+              <div class="admin-table-wrapper" style="max-height: 480px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0;">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Timestamp</th>
+                      <th>Admin Email</th>
+                      <th>Action Performed</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-log-rows">
+                    ${this.renderLogRows()}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
 
           <!-- Configuration sidebar -->
-          <div class="glass" style="padding: 28px; border-radius: var(--radius-lg); height: fit-content; min-width: 280px;">
-            <h3 style="font-size: 1.2rem; margin-bottom: 20px; font-family: var(--font-heading);">System Config</h3>
+          <div class="glass" style="padding: 28px; border-radius: var(--radius-lg); height: fit-content; min-width: 280px; flex: 1;">
+            <h3 style="font-size: 1.2rem; margin-bottom: 20px; font-family: var(--font-heading); color: var(--text-primary);">System Config</h3>
             
             <form id="system-config-form">
               <div class="form-group">
                 <label class="form-label">Site Name</label>
-                <input type="text" id="config-site-name" class="form-control" value="${this.settings.site_name}" required>
+                <input type="text" id="config-site-name" class="form-control" value="${this.settings.site_name || 'PinGrid'}" required>
               </div>
 
               <div class="form-group">
                 <label class="form-label">Announcement Banner</label>
-                <input type="text" id="config-announcement" class="form-control" value="${this.settings.announcement}" placeholder="Banner text (leave empty to hide)">
+                <input type="text" id="config-announcement" class="form-control" value="${this.settings.announcement || ''}" placeholder="Banner text (leave empty to hide)">
               </div>
 
-              <div class="form-group toggle-switch-container" style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px;">
-                <div>
-                  <label class="form-label" style="margin-bottom: 0;">Allow New Registrations</label>
-                  <div class="toggle-label-desc">Toggle to disable new signups dynamically.</div>
+              <div class="form-group" style="margin-top: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">Allow New Registrations</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">Allow anyone to sign up.</div>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="config-allow-signups" ${this.settings.allow_signups ? 'checked' : ''}>
+                    <span class="slider"></span>
+                  </label>
                 </div>
-                <label class="switch">
-                  <input type="checkbox" id="config-allow-signups" ${this.settings.allow_signups ? 'checked' : ''}>
-                  <span class="slider"></span>
-                </label>
               </div>
 
               <button type="submit" id="config-save-btn" class="btn btn-primary" style="width: 100%; margin-top: 24px;">
@@ -355,7 +452,7 @@ export const AdminView = {
           <div style="display: flex; align-items: center; gap: 12px;">
             <img src="${u.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
             <div>
-              <div style="font-weight: 600; display: flex; align-items: center; gap: 6px;">
+              <div style="font-weight: 600; display: flex; align-items: center; gap: 6px; color: var(--text-primary);">
                 <span>${u.display_name || 'Creator'}</span>
                 ${u.is_admin ? `<span class="material-icons-outlined" style="font-size: 1rem; color: var(--accent-primary);" title="Admin Access">verified_user</span>` : ''}
               </div>
@@ -371,13 +468,13 @@ export const AdminView = {
         </td>
         <td>
           <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <button class="btn btn-glass btn-sm btn-suspend" data-id="${u.id}" data-status="${u.is_suspended}" style="padding: 4px 10px; font-size: 0.75rem;">
+            <button class="btn btn-glass btn-sm btn-suspend" data-id="${u.id}" data-status="${u.is_suspended}" style="padding: 4px 10px; font-size: 0.75rem; cursor: pointer;">
               ${u.is_suspended ? 'Reactivate' : 'Suspend'}
             </button>
-            <button class="btn btn-glass btn-sm btn-toggle-admin" data-id="${u.id}" data-admin="${u.is_admin}" style="padding: 4px 10px; font-size: 0.75rem; border-color: ${u.is_admin ? 'var(--accent-primary)' : 'var(--border-color)'}; color: ${u.is_admin ? 'var(--accent-primary)' : 'var(--text-secondary)'};">
+            <button class="btn btn-glass btn-sm btn-toggle-admin" data-id="${u.id}" data-admin="${u.is_admin}" style="padding: 4px 10px; font-size: 0.75rem; border-color: ${u.is_admin ? 'var(--accent-primary)' : 'var(--border-color)'}; color: ${u.is_admin ? 'var(--accent-primary)' : 'var(--text-secondary)'}; cursor: pointer;">
               ${u.is_admin ? 'Revoke Admin' : 'Make Admin'}
             </button>
-            <button class="btn btn-danger btn-sm btn-delete-user" data-id="${u.id}" style="padding: 4px 10px; font-size: 0.75rem;">
+            <button class="btn btn-danger btn-sm btn-delete-user" data-id="${u.id}" style="padding: 4px 10px; font-size: 0.75rem; cursor: pointer;">
               Delete DB
             </button>
           </div>
@@ -388,7 +485,7 @@ export const AdminView = {
 
   renderContentRows: function(imageList) {
     if (imageList.length === 0) {
-      return `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No images uploaded yet.</td></tr>`;
+      return `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No images found in moderation scope.</td></tr>`;
     }
 
     return imageList.map(img => {
@@ -396,14 +493,14 @@ export const AdminView = {
       return `
         <tr id="img-row-${img.id}">
           <td>
-            <img src="${thumbUrl}" style="width: 50px; height: 50px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color); cursor: pointer;" onclick="window.appState.navigate('/admin?pin=${img.id}')">
+            <img src="${thumbUrl}" style="width: 50px; height: 50px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color); cursor: pointer;" onclick="sessionStorage.setItem('lightbox_referrer', '/admin'); window.appState.navigate('/pin/${window.appState.slugify(img.title)}--${img.id}')">
           </td>
           <td>
-            <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${img.title}</div>
+            <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; color: var(--text-primary);">${img.title}</div>
             <div style="font-size: 0.75rem; color: var(--text-muted);">Board: ${img.boards?.name || 'Unassigned'}</div>
           </td>
           <td>
-            <div style="font-size: 0.8rem; font-weight: 500;">${img.users?.display_name || 'Anonymous'}</div>
+            <div style="font-size: 0.8rem; font-weight: 500; color: var(--text-secondary);">${img.users?.display_name || 'Anonymous'}</div>
           </td>
           <td>
             <span id="img-badge-${img.id}" class="btn-glass" style="padding: 2px 6px; font-size: 0.7rem; border-radius: var(--radius-sm); color: ${img.is_public ? '#22c55e' : '#fbbf24'}; background: ${img.is_public ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)'}">
@@ -412,7 +509,7 @@ export const AdminView = {
           </td>
           <td>
             <div style="display: flex; gap: 6px;">
-              <button class="btn btn-glass btn-sm btn-hide-image" data-id="${img.id}" data-status="${img.is_public}" style="padding: 4px 10px; font-size: 0.75rem;">
+              <button class="btn btn-glass btn-sm btn-hide-image" data-id="${img.id}" data-status="${img.is_public}" style="padding: 4px 10px; font-size: 0.75rem; cursor: pointer;">
                 ${img.is_public ? 'Hide' : 'Publish'}
               </button>
             </div>
@@ -432,13 +529,13 @@ export const AdminView = {
       return `
         <tr id="board-row-${b.id}">
           <td>
-            <div style="font-weight: 600; display: flex; align-items: center; gap: 8px;">
+            <div style="font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--text-primary);">
                <span class="material-icons-outlined" style="color: var(--text-secondary);">folder</span>
                <span>${b.name}</span>
             </div>
           </td>
           <td>
-            <div style="font-size: 0.8rem; font-weight: 500;">${b.users?.display_name || 'Anonymous'}</div>
+            <div style="font-size: 0.8rem; font-weight: 500; color: var(--text-secondary);">${b.users?.display_name || 'Anonymous'}</div>
           </td>
           <td>
             <span class="btn-glass" style="padding: 2px 6px; font-size: 0.7rem; border-radius: var(--radius-sm); color: ${b.is_public ? '#22c55e' : '#f59e0b'}; background: ${b.is_public ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)'}">
@@ -452,10 +549,10 @@ export const AdminView = {
           </td>
           <td>
             <div style="display: flex; gap: 6px;">
-              <button class="btn btn-glass btn-sm btn-trend-board" data-id="${b.id}" data-status="${isTrending}" style="padding: 4px 10px; font-size: 0.75rem; color: ${isTrending ? '#ff3366' : 'var(--text-primary)'};">
+              <button class="btn btn-glass btn-sm btn-trend-board" data-id="${b.id}" data-status="${isTrending}" style="padding: 4px 10px; font-size: 0.75rem; color: ${isTrending ? '#ff3366' : 'var(--text-primary)'}; cursor: pointer;">
                 ${isTrending ? 'Remove Trend' : 'Make Trend'}
               </button>
-              <button class="btn btn-danger btn-sm btn-delete-board" data-id="${b.id}" style="padding: 4px 10px; font-size: 0.75rem;">
+              <button class="btn btn-danger btn-sm btn-delete-board" data-id="${b.id}" style="padding: 4px 10px; font-size: 0.75rem; cursor: pointer;">
                 Delete
               </button>
             </div>
@@ -465,42 +562,86 @@ export const AdminView = {
     }).join('');
   },
 
+  renderLogRows: function() {
+    if (!this.auditLogs || this.auditLogs.length === 0) {
+      return `<tr><td colspan="3" style="text-align: center; color: var(--text-muted); padding: 24px;">No system actions logged yet.</td></tr>`;
+    }
+
+    return this.auditLogs.map(log => `
+      <tr>
+        <td style="font-size: 0.8rem; color: var(--text-secondary); white-space: nowrap;">
+          ${new Date(log.timestamp).toLocaleString()}
+        </td>
+        <td style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary); white-space: nowrap;">
+          ${log.admin_email}
+        </td>
+        <td style="font-size: 0.85rem; color: var(--text-secondary);">
+          ${log.action}
+        </td>
+      </tr>
+    `).join('');
+  },
+
   setupEvents: function() {
     // Tab controls
     const tabUsers = document.getElementById('admin-tab-users');
     const tabContent = document.getElementById('admin-tab-content');
     const tabBoards = document.getElementById('admin-tab-boards');
+    const tabLogs = document.getElementById('admin-tab-logs');
     
     const usersPanel = document.getElementById('admin-users-panel');
     const contentPanel = document.getElementById('admin-content-panel');
     const boardsPanel = document.getElementById('admin-boards-panel');
-
-    if (tabUsers && tabContent && tabBoards && usersPanel && contentPanel && boardsPanel) {
+    const logsPanel = document.getElementById('admin-logs-panel');
+    
+    if (tabUsers && tabContent && tabBoards && tabLogs && usersPanel && contentPanel && boardsPanel && logsPanel) {
       tabUsers.onclick = () => {
         tabUsers.classList.add('active');
         tabContent.classList.remove('active');
         tabBoards.classList.remove('active');
+        tabLogs.classList.remove('active');
         usersPanel.style.display = 'block';
         contentPanel.style.display = 'none';
         boardsPanel.style.display = 'none';
+        logsPanel.style.display = 'none';
       };
 
       tabContent.onclick = () => {
         tabContent.classList.add('active');
         tabUsers.classList.remove('active');
         tabBoards.classList.remove('active');
+        tabLogs.classList.remove('active');
         usersPanel.style.display = 'none';
         contentPanel.style.display = 'block';
         boardsPanel.style.display = 'none';
+        logsPanel.style.display = 'none';
       };
 
       tabBoards.onclick = () => {
         tabBoards.classList.add('active');
         tabUsers.classList.remove('active');
         tabContent.classList.remove('active');
+        tabLogs.classList.remove('active');
         usersPanel.style.display = 'none';
         contentPanel.style.display = 'none';
         boardsPanel.style.display = 'block';
+        logsPanel.style.display = 'none';
+      };
+
+      tabLogs.onclick = () => {
+        tabLogs.classList.add('active');
+        tabUsers.classList.remove('active');
+        tabContent.classList.remove('active');
+        tabBoards.classList.remove('active');
+        usersPanel.style.display = 'none';
+        contentPanel.style.display = 'none';
+        boardsPanel.style.display = 'none';
+        logsPanel.style.display = 'block';
+        
+        const logsContainer = document.getElementById('admin-log-rows');
+        if (logsContainer) {
+          logsContainer.innerHTML = this.renderLogRows();
+        }
       };
     }
 
@@ -517,6 +658,24 @@ export const AdminView = {
         if (rowsContainer) {
           rowsContainer.innerHTML = this.renderUserRows(filtered);
           this.attachUserActionEvents();
+        }
+      };
+    }
+
+    // Content Moderation Queue search filter
+    const contentSearchInput = document.getElementById('admin-content-search');
+    if (contentSearchInput) {
+      contentSearchInput.oninput = () => {
+        const query = contentSearchInput.value.toLowerCase();
+        const filtered = this.images.filter(img => 
+          img.title?.toLowerCase().includes(query) || 
+          img.boards?.name?.toLowerCase().includes(query) || 
+          img.users?.email?.toLowerCase().includes(query)
+        );
+        const rowsContainer = document.getElementById('admin-content-rows');
+        if (rowsContainer) {
+          rowsContainer.innerHTML = this.renderContentRows(filtered);
+          this.attachContentActionEvents();
         }
       };
     }
@@ -569,6 +728,8 @@ export const AdminView = {
           await supabase.from('site_settings').upsert({ key: 'announcement', value: JSON.stringify(announcement) });
           await supabase.from('site_settings').upsert({ key: 'allow_signups', value: JSON.stringify(allowSignups) });
 
+          await this.logAdminEvent(`Updated site configurations. Name: "${siteName}", Allow Signups: ${allowSignups}`);
+
           alert("Configuration saved successfully. Refresh to see branding changes.");
           this.settings = { site_name: siteName, announcement, allow_signups: allowSignups };
           this.renderContent();
@@ -603,6 +764,9 @@ export const AdminView = {
 
           if (error) throw error;
           
+          const userObj = this.users.find(u => u.id === userId);
+          await this.logAdminEvent(`${newStatus ? 'Suspended' : 'Activated'} registration for uploader: ${userObj?.email || userId}`);
+
           alert(`User successfully ${newStatus ? 'suspended' : 'reactivated'}.`);
           btn.dataset.status = newStatus.toString();
           btn.textContent = newStatus ? 'Reactivate' : 'Suspend';
@@ -645,6 +809,9 @@ export const AdminView = {
 
           if (error) throw error;
           
+          const userObj = this.users.find(u => u.id === userId);
+          await this.logAdminEvent(`${newStatus ? 'Granted' : 'Revoked'} administrator role for: ${userObj?.email || userId}`);
+
           alert(`User successfully ${newStatus ? 'promoted to admin' : 'demoted from admin'}.`);
           btn.dataset.admin = newStatus.toString();
           btn.textContent = newStatus ? 'Revoke Admin' : 'Make Admin';
@@ -672,6 +839,7 @@ export const AdminView = {
         if (confirm("Are you sure you want to delete this user's records from PinGrid database? Google Drive files will not be touched, but all database rows (credentials, boards, images, likes) will cascade delete permanently.")) {
           btn.disabled = true;
           try {
+            const userObj = this.users.find(u => u.id === userId);
             const supabase = await supabaseCaller();
             const { error } = await supabase
               .from('users')
@@ -679,6 +847,8 @@ export const AdminView = {
               .eq('id', userId);
 
             if (error) throw error;
+
+            await this.logAdminEvent(`Cascade deleted uploader references for: ${userObj?.email || userId}`);
 
             alert("User records deleted from database successfully.");
             const row = document.getElementById(`user-row-${userId}`);
@@ -710,6 +880,9 @@ export const AdminView = {
 
           if (error) throw error;
           
+          const imgObj = this.images.find(img => img.id === imgId);
+          await this.logAdminEvent(`Set visibility to ${newStatus ? 'PUBLIC' : 'HIDDEN'} for image: "${imgObj?.title || imgId}"`);
+
           alert(`Image visibility set to ${newStatus ? 'Public' : 'Hidden'}.`);
           btn.dataset.status = newStatus.toString();
           btn.textContent = newStatus ? 'Hide' : 'Publish';
@@ -734,6 +907,7 @@ export const AdminView = {
     document.querySelectorAll('.btn-delete-board').forEach(btn => {
       btn.onclick = async () => {
         const boardId = btn.dataset.id;
+        const boardObj = this.boards.find(b => b.id === boardId);
         if (confirm("Are you sure you want to delete this board? This will delete all images assigned to this board as well!")) {
           btn.disabled = true;
           try {
@@ -759,14 +933,14 @@ export const AdminView = {
                   }
                 }
               }
-              // Delete board images in DB
               await supabase.from('images').delete().eq('board_id', boardId);
             }
             
-            // Finally delete the board
             const { error } = await supabase.from('boards').delete().eq('id', boardId);
             if (error) throw error;
             
+            await this.logAdminEvent(`Deleted board and cascade deleted images for folder: "${boardObj?.name || boardId}"`);
+
             alert("Board and all associated images deleted successfully.");
             const row = document.getElementById(`board-row-${boardId}`);
             if (row) row.remove();
@@ -782,6 +956,7 @@ export const AdminView = {
     document.querySelectorAll('.btn-trend-board').forEach(btn => {
       btn.onclick = async () => {
         const boardId = btn.dataset.id;
+        const boardObj = this.boards.find(b => b.id === boardId);
         const isTrending = btn.dataset.status === 'true';
         btn.disabled = true;
 
@@ -797,7 +972,6 @@ export const AdminView = {
             }
           }
 
-          // Save new trending_boards setting
           const { error } = await supabase
             .from('site_settings')
             .upsert({ key: 'trending_boards', value: JSON.stringify(newTrendingList) });
@@ -807,6 +981,8 @@ export const AdminView = {
           this.trendingBoardIds = newTrendingList;
           const newStatus = !isTrending;
           
+          await this.logAdminEvent(`Set board "${boardObj?.name || boardId}" trend status to: ${newStatus ? 'TRENDING' : 'STANDARD'}`);
+
           alert(`Board trend updated successfully.`);
           btn.dataset.status = newStatus.toString();
           btn.textContent = newStatus ? 'Remove Trend' : 'Make Trend';

@@ -118,33 +118,49 @@ export const BoardView = {
     const isPublic = this.board.is_public;
     const authorName = this.board.users?.display_name || 'Anonymous';
 
+    // Select dynamic cover image from first board image or fallback
+    const coverUrl = this.images.length > 0
+      ? (this.images[0].drive_view_link || `https://lh3.googleusercontent.com/d/${this.images[0].drive_file_id}`)
+      : 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1200&q=80';
+
     container.innerHTML = `
-      <div class="container animate-fade" style="padding-top: 40px;">
+      <div class="container animate-fade" style="padding-top: 24px;">
+        <!-- Dynamic Board Cover Banner -->
+        <div class="board-cover" style="height: 200px; border-radius: var(--radius-lg); overflow: hidden; position: relative; margin-bottom: -50px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+          <img src="${coverUrl}" style="width: 100%; height: 100%; object-fit: cover; filter: blur(2px) brightness(0.75);" alt="Board Cover">
+          <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(15,23,42,0.4));"></div>
+        </div>
+
         <!-- Board Header -->
-        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 32px; border-bottom: 1px solid var(--border-color); padding-bottom: 24px;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
-            <div>
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <h1 style="font-size: 2.2rem; font-family: var(--font-heading);">${boardName}</h1>
-                <span class="btn-glass" style="padding: 4px 10px; font-size: 0.75rem; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 4px;">
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 32px; border-bottom: 1px solid var(--border-color); padding-bottom: 24px; position: relative; z-index: 10; padding-left: 20px; padding-right: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+            <div style="background: var(--bg-secondary); padding: 16px 24px; border-radius: var(--radius-md); border: 1px solid var(--border-color); box-shadow: var(--shadow-md);">
+              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <h1 style="font-size: 2.2rem; font-family: var(--font-heading); color: var(--text-primary); margin: 0;">${boardName}</h1>
+                <span class="btn-glass" style="padding: 4px 10px; font-size: 0.75rem; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 4px; border: 1px solid var(--border-color); color: var(--text-primary);">
                   <span class="material-icons-outlined" style="font-size: 0.9rem;">${isPublic ? 'public' : 'lock'}</span>
                   <span>${isPublic ? 'Public' : 'Private'}</span>
                 </span>
               </div>
-              <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 4px;">Created by ${authorName}</p>
+              <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 6px;">Created by ${authorName}</p>
             </div>
             
-            ${this.isOwner ? `
-              <div style="display: flex; gap: 8px;">
-                <button id="board-upload-btn" class="btn btn-primary">
+            <div style="margin-bottom: 10px; display: flex; gap: 8px; align-items: center;">
+              <!-- Slideshow Button -->
+              <button id="board-slideshow-btn" class="btn btn-glass btn-icon" title="Play Slideshow" style="background: var(--bg-secondary); border: 1px solid var(--border-color); width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer;">
+                <span class="material-icons-outlined" style="font-size: 1.5rem; color: var(--accent-primary);">slideshow</span>
+              </button>
+
+              ${this.isOwner ? `
+                <button id="board-upload-btn" class="btn btn-primary" style="display: flex; align-items: center; gap: 4px;">
                   <span class="material-icons-outlined">add</span>
-                  <span>Upload Images</span>
+                  <span>Upload</span>
                 </button>
                 <button id="board-settings-btn" class="btn btn-secondary btn-icon" title="Board Settings">
                   <span class="material-icons-outlined">settings</span>
                 </button>
-              </div>
-            ` : ''}
+              ` : ''}
+            </div>
           </div>
         </div>
 
@@ -211,6 +227,163 @@ export const BoardView = {
           }
         }
       );
+    }
+
+    // Slideshow click handler
+    const slideshowBtn = document.getElementById('board-slideshow-btn');
+    if (slideshowBtn) {
+      slideshowBtn.onclick = () => {
+        if (this.images.length === 0) {
+          alert("This board has no images to display in a slideshow!");
+          return;
+        }
+
+        // Slideshow overlay HTML
+        const overlay = document.createElement('div');
+        overlay.innerHTML = `
+          <div id="slideshow-overlay" style="position: fixed; inset: 0; background: #000000; z-index: 500; display: flex; flex-direction: column; justify-content: space-between; padding: 24px; color: #ffffff; animation: fadeIn 0.3s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: center; z-index: 10;">
+              <div>
+                <h2 style="font-family: var(--font-heading); font-size: 1.3rem; margin: 0; color: #fff;">\${this.board.name} Slideshow</h2>
+                <div id="slideshow-counter" style="font-size: 0.8rem; color: #a1a1aa; margin-top: 4px;">Image 1 of \${this.images.length}</div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button id="slideshow-play-pause" class="btn btn-glass" style="border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 8px 16px; border-radius: var(--radius-sm); cursor: pointer; background: rgba(255,255,255,0.1); display: flex; align-items: center; gap: 6px;">
+                  <span class="material-icons-outlined" style="font-size: 1.2rem;">pause</span>
+                  <span id="play-pause-text">Pause</span>
+                </button>
+                <button id="slideshow-close" class="btn btn-glass" style="border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: rgba(255,255,255,0.1);">
+                  <span class="material-icons-outlined">close</span>
+                </button>
+              </div>
+            </div>
+
+            <div style="flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; padding: 40px 0;">
+              <button id="slideshow-prev" style="position: absolute; left: 16px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; z-index: 10;">
+                <span class="material-icons-outlined" style="font-size: 1.8rem;">chevron_left</span>
+              </button>
+
+              <div id="slideshow-image-container" style="max-width: 90%; max-height: 85vh; display: flex; flex-direction: column; align-items: center; transition: opacity 0.3s ease; opacity: 1;">
+                <img id="slideshow-img-el" src="" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: var(--radius-md); box-shadow: 0 20px 50px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1);">
+                <h3 id="slideshow-img-title" style="margin-top: 16px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.8); text-align: center; max-width: 600px; font-size: 1.2rem; color: #fff;">Image Title</h3>
+              </div>
+
+              <button id="slideshow-next" style="position: absolute; right: 16px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; z-index: 10;">
+                <span class="material-icons-outlined" style="font-size: 1.8rem;">chevron_right</span>
+              </button>
+            </div>
+
+            <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; z-index: 10;">
+              <div id="slideshow-progress" style="height: 100%; width: 0%; background: linear-gradient(135deg, #ff3366 0%, #ff6633 100%); transition: width 0.1s linear;"></div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay.firstElementChild);
+
+        const overlayEl = document.getElementById('slideshow-overlay');
+        const imgEl = document.getElementById('slideshow-img-el');
+        const titleEl = document.getElementById('slideshow-img-title');
+        const counterEl = document.getElementById('slideshow-counter');
+        const progressEl = document.getElementById('slideshow-progress');
+        const playPauseBtn = document.getElementById('slideshow-play-pause');
+        const playPauseIcon = playPauseBtn.querySelector('.material-icons-outlined');
+        const playPauseText = document.getElementById('play-pause-text');
+        
+        let currentIndex = 0;
+        let isPlaying = true;
+        let slideInterval;
+        let progressInterval;
+        let progressPercent = 0;
+        const SLIDE_DURATION = 4000;
+
+        const updateSlide = () => {
+          const img = this.images[currentIndex];
+          const url = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
+          
+          const container = document.getElementById('slideshow-image-container');
+          if (container) container.style.opacity = '0';
+          
+          setTimeout(() => {
+            imgEl.src = url;
+            titleEl.textContent = img.title;
+            counterEl.textContent = `Image \${currentIndex + 1} of \${this.images.length}`;
+            if (container) container.style.opacity = '1';
+          }, 200);
+
+          progressPercent = 0;
+          if (progressEl) progressEl.style.width = '0%';
+        };
+
+        const startTimers = () => {
+          clearInterval(slideInterval);
+          clearInterval(progressInterval);
+
+          if (!isPlaying) return;
+
+          slideInterval = setInterval(() => {
+            currentIndex = (currentIndex + 1) % this.images.length;
+            updateSlide();
+          }, SLIDE_DURATION);
+
+          const STEP = 100;
+          progressInterval = setInterval(() => {
+            progressPercent += (STEP / SLIDE_DURATION) * 100;
+            if (progressPercent > 100) progressPercent = 0;
+            if (progressEl) progressEl.style.width = `\${progressPercent}%`;
+          }, STEP);
+        };
+
+        const stopTimers = () => {
+          clearInterval(slideInterval);
+          clearInterval(progressInterval);
+        };
+
+        updateSlide();
+        startTimers();
+
+        document.getElementById('slideshow-prev').onclick = (e) => {
+          e.stopPropagation();
+          currentIndex = (currentIndex - 1 + this.images.length) % this.images.length;
+          updateSlide();
+          startTimers();
+        };
+
+        document.getElementById('slideshow-next').onclick = (e) => {
+          e.stopPropagation();
+          currentIndex = (currentIndex + 1) % this.images.length;
+          updateSlide();
+          startTimers();
+        };
+
+        playPauseBtn.onclick = (e) => {
+          e.stopPropagation();
+          isPlaying = !isPlaying;
+          if (isPlaying) {
+            playPauseIcon.textContent = 'pause';
+            playPauseText.textContent = 'Pause';
+            startTimers();
+          } else {
+            playPauseIcon.textContent = 'play_arrow';
+            playPauseText.textContent = 'Play';
+            stopTimers();
+            if (progressEl) progressEl.style.width = '0%';
+          }
+        };
+
+        const closeSlideshow = () => {
+          stopTimers();
+          if (overlayEl) overlayEl.remove();
+        };
+        document.getElementById('slideshow-close').onclick = closeSlideshow;
+
+        const escHandler = (e) => {
+          if (e.key === 'Escape') {
+            closeSlideshow();
+            document.removeEventListener('keydown', escHandler);
+          }
+        };
+        document.addEventListener('keydown', escHandler);
+      };
     }
 
     if (!this.isOwner) return;
