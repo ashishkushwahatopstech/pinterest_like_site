@@ -51,13 +51,37 @@ export const getSupabase = async () => {
 export const isUserAdmin = async () => {
   try {
     const supabase = await getSupabase();
-    // This calls check_is_admin() implicitly via the database or we can check the user record
+    
+    // 1. Primary: Call the database RPC check_is_admin (highly secure, runs DB-side)
+    const { data: isAdmin, error: rpcError } = await supabase.rpc('check_is_admin');
+    if (!rpcError && typeof isAdmin === 'boolean') {
+      return isAdmin;
+    }
+
+    // 2. Fallback: Parse the Firebase ID Token locally to query users table with UID filter
+    const token = await getIdToken();
+    if (!token) return false;
+
+    // JWT payload is the second segment of the token
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    
+    const payload = JSON.parse(jsonPayload);
+    const uid = payload.sub; // Firebase UID is stored in the sub claim
+
+    if (!uid) return false;
+
     const { data: userProfile, error } = await supabase
       .from('users')
       .select('is_admin')
+      .eq('id', uid)
       .single();
+
     if (error) {
-      // If error occurs, check if it's just that the user doesn't exist yet
+      console.warn("Fallback admin check failed:", error);
       return false;
     }
     return !!userProfile?.is_admin;
