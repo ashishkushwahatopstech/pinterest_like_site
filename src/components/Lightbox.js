@@ -50,7 +50,7 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
               <!-- Static Details Section -->
               <div id="lightbox-static-details">
                 <div id="lightbox-title-container">
-                  <h2 class="lightbox-title mobile-truncate" id="lightbox-title-display" style="color: var(--text-primary); font-family: var(--font-heading); font-size: 1.6rem; font-weight: 700; margin: 0; word-break: break-word; line-height: 1.3;">${img.title}</h2>
+                  <h2 class="lightbox-title mobile-truncate" id="lightbox-title-display" style="color: var(--text-primary); font-family: var(--font-heading); font-size: 1.25rem; font-weight: 700; margin: 0; word-break: break-word; line-height: 1.3;">${img.title}</h2>
                   <div style="display: flex; align-items: center; gap: 8px;">
                     ${isOwner || isAdmin ? `
                       <button id="lightbox-edit-btn" class="btn btn-glass btn-sm" style="padding: 6px 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer; background: var(--bg-primary);">
@@ -81,31 +81,31 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
                       <span style="font-weight: 500;">Secondary backup copy stored in Supabase</span>
                     </div>
                   ` : ''}
+                </div>
 
-                  <div class="lightbox-actions" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 20px;">
-                    <button id="lightbox-download-btn" data-href="${img.drive_download_link || imageUrl}" data-title="${img.title}" class="btn btn-primary" style="flex: 1; min-width: 120px; gap: 8px; align-items: center; justify-content: center; display: flex; padding: 12px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
-                      <span class="material-icons-outlined">download</span>
-                      <span>Download</span>
+                <div class="lightbox-actions" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                  <button id="lightbox-download-btn" data-href="${img.drive_download_link || imageUrl}" data-title="${img.title}" class="btn btn-primary" style="flex: 1; min-width: 120px; gap: 8px; align-items: center; justify-content: center; display: flex; padding: 12px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
+                    <span class="material-icons-outlined">download</span>
+                    <span>Download</span>
+                  </button>
+                  
+                  <button id="lightbox-share-btn" class="btn btn-secondary" style="padding: 12px 16px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
+                    <span class="material-icons-outlined">share</span>
+                    <span>Share</span>
+                  </button>
+                  
+                  ${isAdmin ? `
+                    <button id="lightbox-hide-btn" class="btn btn-danger" style="border-color: #f59e0b; color: #fbbf24; background: rgba(245, 158, 11, 0.1); padding: 12px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
+                      <span class="material-icons-outlined">visibility_off</span>
+                      <span>${img.is_public ? 'Hide' : 'Publish'}</span>
                     </button>
-                    
-                    <button id="lightbox-share-btn" class="btn btn-secondary" style="padding: 12px 16px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
-                      <span class="material-icons-outlined">share</span>
-                      <span>Share</span>
+                  ` : ''}
+                  
+                  ${canDelete ? `
+                    <button id="lightbox-delete-btn" class="btn btn-danger" style="padding: 12px; border-radius: var(--radius-md); cursor: pointer;" aria-label="Delete Image">
+                      <span class="material-icons-outlined">delete</span>
                     </button>
-                    
-                    ${isAdmin ? `
-                      <button id="lightbox-hide-btn" class="btn btn-danger" style="border-color: #f59e0b; color: #fbbf24; background: rgba(245, 158, 11, 0.1); padding: 12px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
-                        <span class="material-icons-outlined">visibility_off</span>
-                        <span>${img.is_public ? 'Hide' : 'Publish'}</span>
-                      </button>
-                    ` : ''}
-                    
-                    ${canDelete ? `
-                      <button id="lightbox-delete-btn" class="btn btn-danger" style="padding: 12px; border-radius: var(--radius-md); cursor: pointer;" aria-label="Delete Image">
-                        <span class="material-icons-outlined">delete</span>
-                      </button>
-                    ` : ''}
-                  </div>
+                  ` : ''}
                 </div>
               </div>
 
