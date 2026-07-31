@@ -1275,7 +1275,8 @@ input:checked + .slider:before {
   }
   
   .collapsible-filters-pane.show-mobile-filters {
-    max-height: 350px;
+    max-height: 650px;
+    overflow: visible !important;
     opacity: 1;
     margin-top: 16px;
     padding: 16px;
