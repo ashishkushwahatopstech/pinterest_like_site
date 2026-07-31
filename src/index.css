@@ -929,11 +929,15 @@ body {
   grid-template-columns: 1fr;
   gap: 32px;
   margin-top: 32px;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 @media (min-width: 768px) {
   .settings-layout {
     grid-template-columns: 240px 1fr;
+    overflow: visible;
   }
 }
 
@@ -947,6 +951,8 @@ body {
   .settings-sidebar {
     flex-direction: row;
     overflow-x: auto;
+    width: 100%;
+    min-width: 0;
     padding-bottom: 8px;
     margin-bottom: 8px;
     border-bottom: 1px solid var(--border-color);
@@ -1784,6 +1790,8 @@ body.dark-theme .font-chip.active {
 .settings-sidebar-wrapper {
   position: relative;
   width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 @media (max-width: 767px) {
