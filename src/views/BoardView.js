@@ -91,9 +91,9 @@ export const BoardView = {
       let query;
       if (uid) {
         const supabase = await getSupabase();
-        query = supabase.from('images').select('*, users(*), boards(*)').eq('board_id', boardId).order('created_at', { ascending: false });
+        query = supabase.from('images').select('*, users!images_user_id_fkey(*), boards(*)').eq('board_id', boardId).order('created_at', { ascending: false });
       } else {
-        query = supabasePublic.from('images').select('*, users(*), boards(*)').eq('board_id', boardId).eq('is_public', true).order('created_at', { ascending: false });
+        query = supabasePublic.from('images').select('*, users!images_user_id_fkey(*), boards(*)').eq('board_id', boardId).eq('is_public', true).order('created_at', { ascending: false });
       }
 
       const { data, error } = await query;

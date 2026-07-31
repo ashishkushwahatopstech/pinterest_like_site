@@ -67,7 +67,7 @@ export const ProfileView = {
       const supabase = await getSupabase();
       const { data, error } = await supabase
         .from('likes')
-        .select('*, images(*, users(*), boards(*))')
+        .select('*, images(*, users!images_user_id_fkey(*), boards(*))')
         .eq('user_id', window.appState.currentUser.uid)
         .order('created_at', { ascending: false });
 

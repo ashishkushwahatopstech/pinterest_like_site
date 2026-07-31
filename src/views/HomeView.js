@@ -87,7 +87,7 @@ export const HomeView = {
 
       let query = supabase
         .from('images')
-        .select('*, users(*), boards(*)')
+        .select('*, users!images_user_id_fkey(*), boards(*)')
         .order('created_at', { ascending: false });
 
       // Apply Board filter

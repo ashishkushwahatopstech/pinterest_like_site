@@ -362,7 +362,7 @@ const openLightboxOverlay = async (imageId) => {
   try {
     const { data, error } = await supabasePublic
       .from('images')
-      .select('*, users(*), boards(*)')
+      .select('*, users!images_user_id_fkey(*), boards(*)')
       .eq('id', imageId)
       .single();
 

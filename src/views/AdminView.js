@@ -102,7 +102,7 @@ export const AdminView = {
       const supabase = await getSupabase();
       const { data, error } = await supabase
         .from('images')
-        .select('*, users(*), boards(*)')
+        .select('*, users!images_user_id_fkey(*), boards(*)')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
