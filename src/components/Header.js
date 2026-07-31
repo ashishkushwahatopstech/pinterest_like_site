@@ -44,15 +44,17 @@ export const renderHeader = (user, isAdmin, currentRoute) => {
                 <span class="material-icons-outlined" style="font-size: 1rem; margin-left: 2px;">expand_more</span>
               </button>
               
-              <div class="dropdown-menu glass" id="header-add-dropdown-menu" style="right: 0; min-width: 180px; display: none; flex-direction: column; gap: 4px; padding: 6px; border-radius: var(--radius-md); box-shadow: var(--glass-shadow); border: 1px solid var(--border-color); background: var(--glass-bg); z-index: 400; position: absolute; top: calc(100% + 8px);">
-                <button class="dropdown-item" id="header-create-board-option" style="width: 100%; text-align: left; display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.85rem; padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-primary); background: none; border: none;">
-                  <span class="material-icons-outlined" style="font-size: 1.15rem; color: var(--accent-primary);">folder</span>
-                  <span>Create Board</span>
-                </button>
-                <button class="dropdown-item" id="header-upload-image-option" style="width: 100%; text-align: left; display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.85rem; padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-primary); background: none; border: none;">
-                  <span class="material-icons-outlined" style="font-size: 1.15rem; color: var(--accent-primary);">add_photo_alternate</span>
-                  <span>Upload Image</span>
-                </button>
+              <div id="header-add-dropdown-menu" style="right: 0; min-width: 180px; display: none; z-index: 400; position: absolute; top: 100%; padding-top: 8px;">
+                <div class="glass" style="display: flex; flex-direction: column; gap: 4px; padding: 6px; border-radius: var(--radius-md); box-shadow: var(--glass-shadow); border: 1px solid var(--border-color); background: var(--glass-bg); width: 100%;">
+                  <button class="dropdown-item" id="header-create-board-option" style="width: 100%; text-align: left; display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.85rem; padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-primary); border: none; background: transparent;">
+                    <span class="material-icons-outlined" style="font-size: 1.15rem; color: var(--accent-primary);">folder</span>
+                    <span>Create Board</span>
+                  </button>
+                  <button class="dropdown-item" id="header-upload-image-option" style="width: 100%; text-align: left; display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.85rem; padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-primary); border: none; background: transparent;">
+                    <span class="material-icons-outlined" style="font-size: 1.15rem; color: var(--accent-primary);">add_photo_alternate</span>
+                    <span>Upload Image</span>
+                  </button>
+                </div>
               </div>
             </div>
             
@@ -224,11 +226,13 @@ export const setupHeaderEvents = (user, onSearch) => {
   if (addBtn && addMenu && addContainer) {
     const showMenu = () => {
       addMenu.style.display = 'flex';
+      addContainer.classList.add('active');
       const arrowIcon = addBtn.querySelector('.material-icons-outlined:last-child');
       if (arrowIcon) arrowIcon.textContent = 'expand_less';
     };
     const hideMenu = () => {
       addMenu.style.display = 'none';
+      addContainer.classList.remove('active');
       const arrowIcon = addBtn.querySelector('.material-icons-outlined:last-child');
       if (arrowIcon) arrowIcon.textContent = 'expand_more';
     };
