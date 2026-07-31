@@ -49,17 +49,64 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
 
               <!-- Static Details Section -->
               <div id="lightbox-static-details">
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px;">
-                  <h2 class="lightbox-title" id="lightbox-title-display" style="color: var(--text-primary); font-family: var(--font-heading); font-size: 1.6rem; font-weight: 700; margin: 0; word-break: break-word; line-height: 1.3;">${img.title}</h2>
-                  ${isOwner || isAdmin ? `
-                    <button id="lightbox-edit-btn" class="btn btn-glass btn-sm" style="padding: 6px 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer; background: var(--bg-primary);">
-                      <span class="material-icons-outlined" style="font-size: 0.95rem;">edit</span>
-                      <span>Edit</span>
-                    </button>
-                  ` : ''}
+                <div id="lightbox-title-container">
+                  <h2 class="lightbox-title mobile-truncate" id="lightbox-title-display" style="color: var(--text-primary); font-family: var(--font-heading); font-size: 1.6rem; font-weight: 700; margin: 0; word-break: break-word; line-height: 1.3;">${img.title}</h2>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    ${isOwner || isAdmin ? `
+                      <button id="lightbox-edit-btn" class="btn btn-glass btn-sm" style="padding: 6px 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer; background: var(--bg-primary);">
+                        <span class="material-icons-outlined" style="font-size: 0.95rem;">edit</span>
+                        <span>Edit</span>
+                      </button>
+                    ` : ''}
+                    <span class="material-icons-outlined" id="title-expand-icon" style="font-size: 1.8rem; display: none; cursor: pointer; user-select: none;">expand_more</span>
+                  </div>
                 </div>
                 
-                <p class="lightbox-desc" id="lightbox-desc-display" style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px; font-size: 0.9rem; word-break: break-word;">${img.description || 'No description provided.'}</p>
+                <div id="lightbox-collapsible-drawer">
+                  <p class="lightbox-desc" id="lightbox-desc-display" style="color: var(--text-secondary); line-height: 1.6; margin-top: 12px; margin-bottom: 24px; font-size: 0.9rem; word-break: break-word;">${img.description || 'No description provided.'}</p>
+                  
+                  ${img.boards ? `
+                    <div style="margin-bottom: 24px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                      <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Board:</span>
+                      <a href="/board/${img.boards.name.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()}--${img.board_id}" class="btn btn-glass" style="padding: 6px 12px; font-size: 0.8rem; border-radius: var(--radius-sm); color: var(--text-primary); display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border-color);">
+                        <span class="material-icons-outlined" style="font-size: 0.95rem;">folder</span>
+                        <span>${img.boards.name}</span>
+                      </a>
+                    </div>
+                  ` : ''}
+                  
+                  ${img.supabase_storage_path ? `
+                    <div style="margin-bottom: 24px; display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #a3e635; background: rgba(163,230,53,0.1); padding: 8px 12px; border-radius: var(--radius-sm); width: fit-content;">
+                      <span class="material-icons-outlined" style="font-size: 1.1rem;">cloud_done</span>
+                      <span style="font-weight: 500;">Secondary backup copy stored in Supabase</span>
+                    </div>
+                  ` : ''}
+
+                  <div class="lightbox-actions" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                    <button id="lightbox-download-btn" data-href="${img.drive_download_link || imageUrl}" data-title="${img.title}" class="btn btn-primary" style="flex: 1; min-width: 120px; gap: 8px; align-items: center; justify-content: center; display: flex; padding: 12px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
+                      <span class="material-icons-outlined">download</span>
+                      <span>Download</span>
+                    </button>
+                    
+                    <button id="lightbox-share-btn" class="btn btn-secondary" style="padding: 12px 16px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
+                      <span class="material-icons-outlined">share</span>
+                      <span>Share</span>
+                    </button>
+                    
+                    ${isAdmin ? `
+                      <button id="lightbox-hide-btn" class="btn btn-danger" style="border-color: #f59e0b; color: #fbbf24; background: rgba(245, 158, 11, 0.1); padding: 12px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
+                        <span class="material-icons-outlined">visibility_off</span>
+                        <span>${img.is_public ? 'Hide' : 'Publish'}</span>
+                      </button>
+                    ` : ''}
+                    
+                    ${canDelete ? `
+                      <button id="lightbox-delete-btn" class="btn btn-danger" style="padding: 12px; border-radius: var(--radius-md); cursor: pointer;" aria-label="Delete Image">
+                        <span class="material-icons-outlined">delete</span>
+                      </button>
+                    ` : ''}
+                  </div>
+                </div>
               </div>
 
               <!-- Edit Inline Form (Hidden initially) -->
@@ -77,48 +124,6 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
                   <button id="edit-cancel-btn" class="btn btn-secondary" style="padding: 10px 16px; font-size: 0.85rem; border-radius: var(--radius-sm); cursor: pointer;">Cancel</button>
                 </div>
               </div>
-              
-              ${img.boards ? `
-                <div style="margin-bottom: 24px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Board:</span>
-                  <a href="/board/${img.boards.name.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()}--${img.board_id}" class="btn btn-glass" style="padding: 6px 12px; font-size: 0.8rem; border-radius: var(--radius-sm); color: var(--text-primary); display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border-color);">
-                    <span class="material-icons-outlined" style="font-size: 0.95rem;">folder</span>
-                    <span>${img.boards.name}</span>
-                  </a>
-                </div>
-              ` : ''}
-              
-              ${img.supabase_storage_path ? `
-                <div style="margin-bottom: 24px; display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #a3e635; background: rgba(163,230,53,0.1); padding: 8px 12px; border-radius: var(--radius-sm); width: fit-content;">
-                  <span class="material-icons-outlined" style="font-size: 1.1rem;">cloud_done</span>
-                  <span style="font-weight: 500;">Secondary backup copy stored in Supabase</span>
-                </div>
-              ` : ''}
-            </div>
-            
-            <div class="lightbox-actions" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 20px;">
-              <button id="lightbox-download-btn" data-href="${img.drive_download_link || imageUrl}" data-title="${img.title}" class="btn btn-primary" style="flex: 1; min-width: 120px; gap: 8px; align-items: center; justify-content: center; display: flex; padding: 12px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
-                <span class="material-icons-outlined">download</span>
-                <span>Download</span>
-              </button>
-              
-              <button id="lightbox-share-btn" class="btn btn-secondary" style="padding: 12px 16px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
-                <span class="material-icons-outlined">share</span>
-                <span>Share</span>
-              </button>
-              
-              ${isAdmin ? `
-                <button id="lightbox-hide-btn" class="btn btn-danger" style="border-color: #f59e0b; color: #fbbf24; background: rgba(245, 158, 11, 0.1); padding: 12px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
-                  <span class="material-icons-outlined">visibility_off</span>
-                  <span>${img.is_public ? 'Hide' : 'Publish'}</span>
-                </button>
-              ` : ''}
-              
-              ${canDelete ? `
-                <button id="lightbox-delete-btn" class="btn btn-danger" style="padding: 12px; border-radius: var(--radius-md); cursor: pointer;" aria-label="Delete Image">
-                  <span class="material-icons-outlined">delete</span>
-                </button>
-              ` : ''}
             </div>
           </div>
         </div>
@@ -155,6 +160,11 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
   const saveChangesBtn = document.getElementById('edit-save-btn');
   const cancelChangesBtn = document.getElementById('edit-cancel-btn');
 
+  // Mobile collapsible elements
+  const titleContainer = document.getElementById('lightbox-title-container');
+  const collapsibleDrawer = document.getElementById('lightbox-collapsible-drawer');
+  const expandIcon = document.getElementById('title-expand-icon');
+
   const closeLightbox = () => {
     if (lightboxModal) {
       lightboxModal.classList.remove('show');
@@ -174,7 +184,7 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
     closeBtn.addEventListener('click', closeLightbox);
   }
 
-  // Toggle info panel visibility
+  // Toggle info panel visibility (fullscreen toggle)
   if (infoToggleBtn && lightboxModal) {
     infoToggleBtn.addEventListener('click', () => {
       lightboxModal.classList.toggle('hide-info');
@@ -186,6 +196,29 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
         icon.textContent = isHidden ? 'fullscreen_exit' : 'fullscreen';
       }
     });
+  }
+
+  // Mobile collapsible title triggers
+  if (titleContainer && collapsibleDrawer) {
+    titleContainer.onclick = (e) => {
+      // Toggle expanded drawer
+      const isExpanded = collapsibleDrawer.classList.toggle('expanded');
+      
+      // Update toggle icon
+      if (expandIcon) {
+        expandIcon.textContent = isExpanded ? 'expand_less' : 'expand_more';
+      }
+      
+      // Toggle single-line text truncation
+      const titleDisplay = document.getElementById('lightbox-title-display');
+      if (titleDisplay) {
+        if (isExpanded) {
+          titleDisplay.classList.remove('mobile-truncate');
+        } else {
+          titleDisplay.classList.add('mobile-truncate');
+        }
+      }
+    };
   }
 
   // Inline edit triggers
@@ -323,14 +356,52 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
       shareBtn.innerHTML = `<span class="material-icons-outlined" style="animation: loading 1s infinite;">hourglass_empty</span><span>Sharing...</span>`;
       
       try {
-        const accessToken = await getGoogleDriveToken();
-        if (accessToken) {
-          await makeFilePublic(accessToken, img.drive_file_id);
+        const isOwner = currentUser && currentUser.uid === img.user_id;
+        if (isOwner) {
+          try {
+            const accessToken = await getGoogleDriveToken();
+            if (accessToken) {
+              await makeFilePublic(accessToken, img.drive_file_id);
+            }
+          } catch (driveErr) {
+            console.warn("Owner failed to ensure file is public on Google Drive:", driveErr);
+          }
         }
         
         const cleanTitle = window.appState.slugify(img.title);
         const shareUrl = `${window.location.origin}/pin/${cleanTitle}--${img.id}`;
-        await navigator.clipboard.writeText(shareUrl);
+        
+        // Robust clipboard write fallback
+        let copySuccess = false;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          try {
+            await navigator.clipboard.writeText(shareUrl);
+            copySuccess = true;
+          } catch (clipErr) {
+            console.warn("navigator.clipboard failed, running selection fallback:", clipErr);
+          }
+        }
+        
+        if (!copySuccess) {
+          const textarea = document.createElement('textarea');
+          textarea.value = shareUrl;
+          textarea.style.position = 'fixed';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.focus();
+          textarea.select();
+          try {
+            document.execCommand('copy');
+            copySuccess = true;
+          } catch (execErr) {
+            console.error("Selection copy fallback failed:", execErr);
+          }
+          document.body.removeChild(textarea);
+        }
+        
+        if (!copySuccess) {
+          throw new Error("Could not copy link to clipboard. Please copy it manually: " + shareUrl);
+        }
         
         shareBtn.classList.remove('btn-secondary');
         shareBtn.classList.add('btn-primary');
@@ -345,7 +416,7 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
           shareBtn.disabled = false;
         }, 2000);
       } catch (err) {
-        alert("Failed to copy share link: " + err.message);
+        alert(err.message);
         shareBtn.disabled = false;
         shareBtn.innerHTML = `<span class="material-icons-outlined">share</span><span>Share</span>`;
       }

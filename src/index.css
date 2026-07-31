@@ -1491,3 +1491,68 @@ body.dark-theme .drawer {
   from { transform: translateY(12px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* --- LIGHTBOX RELATED CONTRAST PROTECTION --- */
+.lightbox-related-section .pin-title {
+  color: #ffffff !important;
+}
+
+.lightbox-related-section .pin-author {
+  color: #cbd5e1 !important;
+}
+
+/* --- PERSISTENT MOBILE CARD OVERLAYS --- */
+@media (max-width: 767px) {
+  .pin-overlay {
+    opacity: 1 !important;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.65) 100%) !important;
+  }
+
+  /* Mobile Collapsible Details Panel inside Lightbox */
+  #lightbox-title-container {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 6px 0;
+  }
+
+  #title-expand-icon {
+    display: inline-block !important;
+    color: var(--text-secondary);
+    user-select: none;
+  }
+
+  .mobile-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 82%;
+    display: inline-block;
+  }
+
+  #lightbox-collapsible-drawer {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  #lightbox-collapsible-drawer.expanded {
+    max-height: 800px;
+    opacity: 1;
+    margin-top: 16px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  #title-expand-icon {
+    display: none !important;
+  }
+}
