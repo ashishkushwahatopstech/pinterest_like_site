@@ -188,9 +188,18 @@ export const SettingsView = {
         <h3 style="font-size: 1rem; margin-bottom: 4px; font-weight: 600; color: var(--text-primary); font-family: var(--font-heading);">Grid Spacing Density</h3>
         <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 12px;">Adjust the layout margins and spacing between images on grids.</p>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button class="btn btn-glass btn-sm density-chip ${activeDensity === 'compact' ? 'active' : ''}" data-density="compact" style="font-size: 0.8rem; border-radius: var(--radius-sm);">Compact (8px)</button>
-          <button class="btn btn-glass btn-sm density-chip ${activeDensity === 'normal' ? 'active' : ''}" data-density="normal" style="font-size: 0.8rem; border-radius: var(--radius-sm);">Standard (16px)</button>
-          <button class="btn btn-glass btn-sm density-chip ${activeDensity === 'spacious' ? 'active' : ''}" data-density="spacious" style="font-size: 0.8rem; border-radius: var(--radius-sm);">Spacious (24px)</button>
+          <button class="btn btn-glass btn-sm density-chip ${activeDensity === 'compact' ? 'active' : ''}" data-density="compact" style="font-size: 0.8rem; border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: 4px;">
+            ${activeDensity === 'compact' ? '<span class="material-icons-outlined" style="font-size: 0.95rem; color: var(--accent-primary);">check</span>' : ''}
+            <span>Compact (8px)</span>
+          </button>
+          <button class="btn btn-glass btn-sm density-chip ${activeDensity === 'normal' ? 'active' : ''}" data-density="normal" style="font-size: 0.8rem; border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: 4px;">
+            ${activeDensity === 'normal' ? '<span class="material-icons-outlined" style="font-size: 0.95rem; color: var(--accent-primary);">check</span>' : ''}
+            <span>Standard (16px)</span>
+          </button>
+          <button class="btn btn-glass btn-sm density-chip ${activeDensity === 'spacious' ? 'active' : ''}" data-density="spacious" style="font-size: 0.8rem; border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: 4px;">
+            ${activeDensity === 'spacious' ? '<span class="material-icons-outlined" style="font-size: 0.95rem; color: var(--accent-primary);">check</span>' : ''}
+            <span>Spacious (24px)</span>
+          </button>
         </div>
       </div>
 
@@ -199,9 +208,18 @@ export const SettingsView = {
         <h3 style="font-size: 1rem; margin-bottom: 4px; font-weight: 600; color: var(--text-primary); font-family: var(--font-heading);">Typography Style</h3>
         <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 12px;">Customize the text font family used across layout titles and pages.</p>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button class="btn btn-glass btn-sm font-chip ${activeFont === 'outfit' ? 'active' : ''}" data-font="outfit" style="font-size: 0.8rem; border-radius: var(--radius-sm); font-family: 'Outfit', sans-serif;">Outfit (Rounded)</button>
-          <button class="btn btn-glass btn-sm font-chip ${activeFont === 'inter' ? 'active' : ''}" data-font="inter" style="font-size: 0.8rem; border-radius: var(--radius-sm); font-family: 'Inter', sans-serif;">Inter (Clean)</button>
-          <button class="btn btn-glass btn-sm font-chip ${activeFont === 'playfair' ? 'active' : ''}" data-font="playfair" style="font-size: 0.8rem; border-radius: var(--radius-sm); font-family: 'Playfair Display', serif;">Playfair (Editorial)</button>
+          <button class="btn btn-glass btn-sm font-chip ${activeFont === 'outfit' ? 'active' : ''}" data-font="outfit" style="font-size: 0.8rem; border-radius: var(--radius-sm); font-family: 'Outfit', sans-serif; display: inline-flex; align-items: center; gap: 4px;">
+            ${activeFont === 'outfit' ? '<span class="material-icons-outlined" style="font-size: 0.95rem; color: var(--accent-primary);">check</span>' : ''}
+            <span>Outfit (Rounded)</span>
+          </button>
+          <button class="btn btn-glass btn-sm font-chip ${activeFont === 'inter' ? 'active' : ''}" data-font="inter" style="font-size: 0.8rem; border-radius: var(--radius-sm); font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; gap: 4px;">
+            ${activeFont === 'inter' ? '<span class="material-icons-outlined" style="font-size: 0.95rem; color: var(--accent-primary);">check</span>' : ''}
+            <span>Inter (Clean)</span>
+          </button>
+          <button class="btn btn-glass btn-sm font-chip ${activeFont === 'playfair' ? 'active' : ''}" data-font="playfair" style="font-size: 0.8rem; border-radius: var(--radius-sm); font-family: 'Playfair Display', serif; display: inline-flex; align-items: center; gap: 4px;">
+            ${activeFont === 'playfair' ? '<span class="material-icons-outlined" style="font-size: 0.95rem; color: var(--accent-primary);">check</span>' : ''}
+            <span>Playfair (Editorial)</span>
+          </button>
         </div>
       </div>
     `;

@@ -1724,3 +1724,28 @@ body.dark-theme .appearance-card.selected,
 body.dark-theme .accent-color-card.selected {
   background: rgba(255, 74, 122, 0.08) !important;
 }
+
+/* Custom Spacing & Font Chip highlights */
+.density-chip, .font-chip {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s, background-color 0.2s, color 0.2s !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.density-chip:hover, .font-chip:hover {
+  transform: translateY(-1px) scale(1.02);
+  border-color: var(--accent-primary) !important;
+  color: var(--text-primary) !important;
+  background: rgba(255, 74, 122, 0.02) !important;
+}
+
+.density-chip.active, .font-chip.active {
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 1px var(--accent-primary) !important;
+  background: rgba(255, 74, 122, 0.05) !important;
+  color: var(--accent-primary) !important;
+}
+
+body.dark-theme .density-chip.active,
+body.dark-theme .font-chip.active {
+  background: rgba(255, 74, 122, 0.08) !important;
+}
