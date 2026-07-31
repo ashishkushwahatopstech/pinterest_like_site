@@ -269,39 +269,19 @@ export const HomeView = {
                   
                   ${(() => {
                     const trendingIds = this.getTrendingBoardIds();
-                    const trending = this.boards.filter(b => trendingIds.includes(b.id));
-                    const normal = this.boards.filter(b => !trendingIds.includes(b.id));
-                    
-                    let html = '';
-                    if (trending.length > 0) {
-                      html += `
-                        <div class="dropdown-group-header" style="padding: 6px 12px; font-size: 0.75rem; color: var(--accent-primary); font-weight: 700; border-bottom: 1px solid rgba(255, 51, 102, 0.1); margin-top: 4px; display: flex; align-items: center; gap: 4px;">
-                          <span class="material-icons-outlined" style="font-size: 0.95rem;">local_fire_department</span>
-                          <span>Trending</span>
-                        </div>
-                      `;
-                      html += trending.map(b => `
-                        <div class="dropdown-option ${this.selectedBoardId === b.id ? 'selected' : ''}" data-value="${b.id}" style="padding-left: 20px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    return this.boards.map(b => {
+                      const isTrending = trendingIds.includes(b.id);
+                      return `
+                        <div class="dropdown-option ${this.selectedBoardId === b.id ? 'selected' : ''}" data-value="${b.id}" style="padding-left: 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
                           <span>${b.name}</span>
-                          <svg style="width: 14px; height: 14px; fill: #ff3366; flex-shrink: 0;" viewBox="0 0 24 24">
-                            <path d="M12,2C11.5,2 11,2.2 10.6,2.6C9.1,4.1 8,6.1 8,8.2C8,10.6 9.4,12.7 11.5,13.7C10.1,13.8 8.8,13.4 7.8,12.5C7.2,12 6.8,11.3 6.6,10.6C6.5,10.1 6.2,9.8 5.7,9.8C5.2,9.8 4.9,10.1 4.8,10.6C4.3,12.6 4.6,14.7 5.7,16.5C7.3,19.3 10.3,21 13.5,21C18.2,21 22,17.2 22,12.5C22,9.2 20.1,6.3 17.2,4.8C16.8,4.6 16.4,4.9 16.4,5.4C16.4,6.2 15.9,7 15.1,7.5C14,8.2 12.8,8.5 11.6,8.2C12.8,6.8 13.5,5.1 13.5,3.3C13.5,2.6 12.8,2 12,2Z"/>
-                          </svg>
-                        </div>
-                      `).join('');
-                    }
-                    
-                    if (normal.length > 0) {
-                      html += `
-                        <div class="dropdown-group-header" style="padding: 6px 12px; font-size: 0.75rem; color: var(--text-secondary); font-weight: 700; border-bottom: 1px solid var(--border-color); margin-top: 8px; display: flex; align-items: center; gap: 4px;">
-                          <span class="material-icons-outlined" style="font-size: 0.95rem;">folder</span>
-                          <span>Collections</span>
+                          ${isTrending ? `
+                            <svg style="width: 16px; height: 16px; fill: #ff3366; flex-shrink: 0;" viewBox="0 0 24 24" title="Trending">
+                              <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/>
+                            </svg>
+                          ` : ''}
                         </div>
                       `;
-                      html += normal.map(b => `
-                        <div class="dropdown-option ${this.selectedBoardId === b.id ? 'selected' : ''}" data-value="${b.id}" style="padding-left: 20px;">${b.name}</div>
-                      `).join('');
-                    }
-                    return html;
+                    }).join('');
                   })()}
                 </div>
               </div>
