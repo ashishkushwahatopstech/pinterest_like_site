@@ -48,6 +48,9 @@ export const HomeView = {
       </section>
       
       <div class="container">
+        <!-- Trending Collections Section -->
+        <div id="trending-collections-tray" style="margin-bottom: 40px; display: none;"></div>
+
         <!-- Interactive Filter Panel -->
         <div id="board-filters">
           <div style="display: flex; gap: 16px; flex-wrap: wrap; width: 100%; align-items: center; margin-bottom: 32px;">
@@ -73,13 +76,14 @@ export const HomeView = {
 
     this.renderFilters();
     this.renderGrid();
+    this.renderTrendingCollections();
   },
 
   fetchPublicBoards: async function() {
     try {
       const { data, error } = await supabasePublic
         .from('boards')
-        .select('id, name')
+        .select('id, name, description, user_id, users(display_name), images(drive_file_id, drive_view_link)')
         .eq('is_public', true)
         .order('name');
         
@@ -114,6 +118,62 @@ export const HomeView = {
     }
     // Fallback to first 4 board IDs as trending
     return this.boards.slice(0, 4).map(b => b.id);
+  },
+
+  renderTrendingCollections: function() {
+    const tray = document.getElementById('trending-collections-tray');
+    if (!tray) return;
+
+    // Show ONLY on default home view (no active filters or search query)
+    if (this.selectedBoardId || this.searchQuery) {
+      tray.style.display = 'none';
+      return;
+    }
+
+    const trendingIds = this.getTrendingBoardIds();
+    const trendingBoards = this.boards.filter(b => trendingIds.includes(b.id)).slice(0, 4);
+
+    if (trendingBoards.length === 0) {
+      tray.style.display = 'none';
+      return;
+    }
+
+    const cardsHtml = trendingBoards.map(b => {
+      const coverImg = b.images && b.images.length > 0
+        ? (b.images[0].drive_view_link || `https://lh3.googleusercontent.com/d/${b.images[0].drive_file_id}`)
+        : 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=600&q=80';
+      
+      const count = b.images ? b.images.length : 0;
+      
+      return `
+        <div class="trending-collection-card glass" style="border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column; cursor: pointer; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);" onclick="event.preventDefault(); window.appState.navigate('/board/${window.appState.slugify(b.name)}--${b.id}')">
+          <div style="height: 120px; overflow: hidden; position: relative;">
+            <img src="${coverImg}" style="width: 100%; height: 100%; object-fit: cover;" class="collection-cover-img">
+            <span style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.65); color: #fff; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.7rem; font-weight: 600; backdrop-filter: blur(4px);">
+              ${count} ${count === 1 ? 'Pin' : 'Pins'}
+            </span>
+          </div>
+          <div style="padding: 16px; display: flex; flex-direction: column; gap: 4px;">
+            <h4 style="font-family: var(--font-heading); font-size: 1rem; color: var(--text-primary); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${b.name}</h4>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-secondary);">
+              <span>by ${b.users?.display_name || 'Anonymous'}</span>
+              <span class="material-icons-outlined" style="font-size: 0.9rem; color: var(--accent-primary);">trending_up</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    tray.style.display = 'block';
+    tray.innerHTML = `
+      <h3 style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        <span class="material-icons-outlined" style="background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">local_fire_department</span>
+        <span>Featured Collections</span>
+      </h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+        ${cardsHtml}
+      </div>
+    `;
   },
 
   fetchImages: async function() {
@@ -381,6 +441,7 @@ export const HomeView = {
       
       await this.fetchImages();
       this.renderGrid();
+      this.renderTrendingCollections();
     };
 
     // Helper to setup custom dropdown selection
