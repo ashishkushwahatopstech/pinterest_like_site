@@ -1736,8 +1736,12 @@ body.dark-theme .drawer {
     display: none !important;
   }
   
+  .site-header .nav-actions {
+    margin-right: -10px !important;
+  }
+  
   #header-add-dropdown-menu {
-    right: -12px !important;
+    right: -4px !important;
   }
 }
 
