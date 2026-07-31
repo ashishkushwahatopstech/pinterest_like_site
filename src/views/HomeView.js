@@ -176,9 +176,35 @@ export const HomeView = {
     `;
   },
 
+  showGridLoadingSkeletons: function(show) {
+    const grid = document.getElementById('gallery-masonry-grid');
+    if (!grid) return;
+    
+    let skeletons = document.getElementById('grid-loading-skeletons');
+    if (show) {
+      if (!skeletons) {
+        skeletons = document.createElement('div');
+        skeletons.id = 'grid-loading-skeletons';
+        skeletons.className = 'masonry-grid';
+        skeletons.style.marginTop = '16px';
+        skeletons.innerHTML = renderPinSkeleton(5);
+        grid.parentNode.insertBefore(skeletons, grid.nextSibling);
+      }
+    } else {
+      if (skeletons) {
+        skeletons.remove();
+      }
+    }
+  },
+
   fetchImages: async function() {
     this.loading = true;
     const currentFetchId = ++this.activeFetchId;
+    
+    if (this.page > 0) {
+      this.showGridLoadingSkeletons(true);
+    }
+
     try {
       const user = window.appState?.currentUser;
       const supabase = user ? await getSupabase() : supabasePublic;
@@ -240,6 +266,7 @@ export const HomeView = {
     } finally {
       if (currentFetchId === this.activeFetchId) {
         this.loading = false;
+        this.showGridLoadingSkeletons(false);
       }
     }
   },
@@ -548,7 +575,8 @@ export const HomeView = {
       return;
     }
 
-    gridContainer.innerHTML = renderMasonryGrid(this.images, this.hasMore);
+    const showButton = this.page >= 2;
+    gridContainer.innerHTML = renderMasonryGrid(this.images, this.hasMore, 'gallery-masonry-grid', showButton);
 
     // Setup Grid event listeners (Clicks & Likes)
     const gridEl = document.getElementById('gallery-masonry-grid');
@@ -569,7 +597,13 @@ export const HomeView = {
       );
     }
 
-    // Setup Infinite scroll observer
+    // Setup Load More button click if rendered
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    if (loadMoreBtn) {
+      loadMoreBtn.onclick = () => this.loadMore();
+    }
+
+    // Setup Infinite scroll observer if sentinel is present (scroll limits not hit yet)
     const sentinel = document.getElementById('infinite-scroll-sentinel');
     if (sentinel) {
       setupInfiniteScroll(sentinel, () => this.loadMore());

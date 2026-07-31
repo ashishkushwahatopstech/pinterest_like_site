@@ -27,8 +27,10 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
         
         <!-- Main Detail Card -->
         <div class="lightbox-main-card glass animate-fade">
-          <div class="lightbox-content-wrapper">
-            <img class="lightbox-image" src="${imageUrl}" alt="${img.title}">
+          <div class="lightbox-content-wrapper" style="position: relative; background: rgba(255,255,255,0.02); min-height: 200px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md) 0 0 var(--radius-md); overflow: hidden;">
+            <!-- Skeleton loader that displays while loading -->
+            <div class="skeleton lightbox-image-skeleton" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1;"></div>
+            <img class="lightbox-image" src="${imageUrl}" alt="${img.title}" style="opacity: 0; transition: opacity 0.3s ease; z-index: 2;" onload="this.style.opacity='1'; const sk = this.previousElementSibling; if(sk) sk.style.display='none';">
             <button class="btn btn-glass" id="lightbox-fullscreen-exit-btn" style="position: absolute; top: 16px; right: 16px; border-radius: 50%; width: 44px; height: 44px; display: none; align-items: center; justify-content: center; z-index: 500; cursor: pointer; border: 1px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.5); color: #ffffff;" aria-label="Exit Fullscreen">
               <span class="material-icons-outlined" style="font-size: 1.5rem;">fullscreen_exit</span>
             </button>

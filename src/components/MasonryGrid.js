@@ -1,6 +1,6 @@
 // MasonryGrid Component - Pinterest-style masonry grid layout with infinite scroll and event delegation
 
-export const renderMasonryGrid = (images, hasMore = false, gridId = 'gallery-masonry-grid') => {
+export const renderMasonryGrid = (images, hasMore = false, gridId = 'gallery-masonry-grid', showLoadMoreButton = false) => {
   if (!images || images.length === 0) {
     return `
       <div style="text-align: center; padding: 80px 24px; color: var(--text-secondary); width: 100%;">
@@ -50,11 +50,18 @@ export const renderMasonryGrid = (images, hasMore = false, gridId = 'gallery-mas
     <div class="masonry-grid" id="${gridId}">
       ${itemsHtml}
     </div>
-    ${hasMore ? `
+    ${hasMore ? (showLoadMoreButton ? `
+      <div id="load-more-container" style="display: flex; justify-content: center; padding: 40px 0; width: 100%;">
+        <button id="load-more-btn" class="btn btn-primary animate-fade" style="padding: 14px 32px; border-radius: var(--radius-md); font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow-md); cursor: pointer; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);">
+          <span class="material-icons-outlined">expand_more</span>
+          <span>Load More Gallery Images</span>
+        </button>
+      </div>
+    ` : `
       <div id="infinite-scroll-sentinel" style="display: flex; justify-content: center; padding: 40px 0; width: 100%;">
         <div class="skeleton" style="width: 40px; height: 40px; border-radius: 50%; display: inline-block;"></div>
       </div>
-    ` : ''}
+    `) : ''}
   `;
 };
 
