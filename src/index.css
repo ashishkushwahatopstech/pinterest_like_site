@@ -1132,3 +1132,28 @@ input:checked + .slider:before {
   position: relative;
   z-index: 101;
 }
+
+/* Responsive Mobile Header & Navigation Optimization */
+@media (max-width: 767px) {
+  .container {
+    padding: 0 16px;
+  }
+  
+  .site-header .search-bar {
+    display: none !important;
+  }
+  
+  .nav-actions {
+    gap: 8px;
+  }
+}
+
+.btn-text-responsive {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .btn-text-responsive {
+    display: inline !important;
+  }
+}

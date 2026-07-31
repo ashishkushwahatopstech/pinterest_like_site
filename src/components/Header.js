@@ -34,7 +34,7 @@ export const renderHeader = (user, isAdmin, currentRoute) => {
           ${user ? `
             <button id="header-upload-btn" class="btn btn-primary">
               <span class="material-icons-outlined" style="font-size: 1.2rem;">add</span>
-              <span style="display: none; @media (min-width: 640px) { display: inline; }">Create</span>
+              <span class="btn-text-responsive" style="margin-left: 4px;">Create</span>
             </button>
             
             <div class="user-menu" id="user-menu-container">
