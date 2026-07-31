@@ -18,8 +18,8 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
         <span class="material-icons-outlined" style="font-size: 1.8rem; color: var(--text-primary);">close</span>
       </button>
       
-      <button class="lightbox-close-btn" id="lightbox-info-toggle-btn" style="right: 88px; position: fixed; z-index: 310;" aria-label="Toggle Info Panel">
-        <span class="material-icons-outlined" id="info-toggle-icon" style="font-size: 1.8rem; color: var(--text-primary);">${isInfoHidden ? 'info_outline' : 'info'}</span>
+      <button class="lightbox-close-btn" id="lightbox-info-toggle-btn" style="right: 88px; position: fixed; z-index: 310;" aria-label="Toggle Fullscreen">
+        <span class="material-icons-outlined" id="info-toggle-icon" style="font-size: 1.8rem; color: var(--text-primary);">${isInfoHidden ? 'fullscreen_exit' : 'fullscreen'}</span>
       </button>
       
       <!-- Scrollable Container -->
@@ -183,7 +183,7 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
       
       const icon = document.getElementById('info-toggle-icon');
       if (icon) {
-        icon.textContent = isHidden ? 'info_outline' : 'info';
+        icon.textContent = isHidden ? 'fullscreen_exit' : 'fullscreen';
       }
     });
   }
