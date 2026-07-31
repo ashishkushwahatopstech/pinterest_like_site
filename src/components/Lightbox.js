@@ -7,11 +7,18 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
   const imageUrl = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
   const isOwner = currentUser && currentUser.uid === img.user_id;
   const canDelete = isOwner || isAdmin;
+  
+  // Restore user preference for info panel
+  const isInfoHidden = localStorage.getItem('lightbox_info_hidden') === 'true';
 
   return `
-    <div class="lightbox show" id="lightbox-modal">
+    <div class="lightbox show ${isInfoHidden ? 'hide-info' : ''}" id="lightbox-modal">
       <button class="lightbox-close-btn" id="lightbox-close-btn" aria-label="Close Lightbox">
         <span class="material-icons-outlined" style="font-size: 1.8rem; color: var(--text-primary);">close</span>
+      </button>
+      
+      <button class="lightbox-close-btn" id="lightbox-info-toggle-btn" style="right: 88px;" aria-label="Toggle Info Panel">
+        <span class="material-icons-outlined" id="info-toggle-icon" style="font-size: 1.8rem; color: var(--text-primary);">${isInfoHidden ? 'info_outline' : 'info'}</span>
       </button>
       
       <div class="lightbox-content-wrapper animate-fade">
@@ -40,7 +47,7 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
           ${img.boards ? `
             <div style="margin-bottom: 24px;">
               <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Board:</span>
-              <a href="#board/${img.board_id}" class="btn btn-glass" style="padding: 4px 12px; font-size: 0.8rem; border-radius: var(--radius-sm); margin-left: 8px;">
+              <a href="/board/${img.board_id}" class="btn btn-glass" style="padding: 4px 12px; font-size: 0.8rem; border-radius: var(--radius-sm); margin-left: 8px;">
                 <span class="material-icons-outlined" style="font-size: 0.9rem; vertical-align: middle; margin-right: 4px;">folder</span>
                 <span style="vertical-align: middle;">${img.boards.name}</span>
               </a>
@@ -56,10 +63,10 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
         </div>
         
         <div class="lightbox-actions">
-          <a href="${img.drive_download_link || imageUrl}" target="_blank" download="${img.title}" class="btn btn-primary" style="flex: 1;">
+          <button id="lightbox-download-btn" data-href="${img.drive_download_link || imageUrl}" data-title="${img.title}" class="btn btn-primary" style="flex: 1; gap: 8px; align-items: center; justify-content: center; display: flex;">
             <span class="material-icons-outlined">download</span>
             <span>Download</span>
-          </a>
+          </button>
           
           <button id="lightbox-share-btn" class="btn btn-secondary">
             <span class="material-icons-outlined">share</span>
@@ -86,6 +93,8 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
 
 export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
   const closeBtn = document.getElementById('lightbox-close-btn');
+  const infoToggleBtn = document.getElementById('lightbox-info-toggle-btn');
+  const downloadBtn = document.getElementById('lightbox-download-btn');
   const lightboxModal = document.getElementById('lightbox-modal');
   const deleteBtn = document.getElementById('lightbox-delete-btn');
   const shareBtn = document.getElementById('lightbox-share-btn');
@@ -112,6 +121,59 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
 
   if (closeBtn) {
     closeBtn.addEventListener('click', closeLightbox);
+  }
+
+  // Toggle info panel visibility
+  if (infoToggleBtn && lightboxModal) {
+    infoToggleBtn.addEventListener('click', () => {
+      lightboxModal.classList.toggle('hide-info');
+      const isHidden = lightboxModal.classList.contains('hide-info');
+      localStorage.setItem('lightbox_info_hidden', isHidden ? 'true' : 'false');
+      
+      const icon = document.getElementById('info-toggle-icon');
+      if (icon) {
+        icon.textContent = isHidden ? 'info_outline' : 'info';
+      }
+    });
+  }
+
+  // Force file download locally (bypassing cross-origin browser new tab navigations)
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const originalText = downloadBtn.innerHTML;
+      downloadBtn.innerHTML = `<span class="material-icons-outlined" style="animation: loading 1s infinite;">hourglass_empty</span><span>Downloading...</span>`;
+      downloadBtn.style.pointerEvents = 'none';
+
+      try {
+        const fileUrl = downloadBtn.dataset.href;
+        const response = await fetch(fileUrl);
+        if (!response.ok) throw new Error("Fetch failed");
+        
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        
+        const tempLink = document.createElement('a');
+        tempLink.href = blobUrl;
+        
+        // Find correct extension if possible
+        const fileExt = fileUrl.split('?')[0].split('.').pop() || 'png';
+        const safeExt = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'].includes(fileExt.toLowerCase()) ? fileExt : 'png';
+        tempLink.download = `${downloadBtn.dataset.title || 'image'}.${safeExt}`;
+        
+        document.body.appendChild(tempLink);
+        tempLink.click();
+        
+        document.body.removeChild(tempLink);
+        URL.revokeObjectURL(blobUrl);
+      } catch (err) {
+        console.warn("Direct download failed, falling back to new tab:", err);
+        window.open(downloadBtn.dataset.href, '_blank');
+      } finally {
+        downloadBtn.innerHTML = originalText;
+        downloadBtn.style.pointerEvents = 'auto';
+      }
+    });
   }
 
   // Close lightbox on click outside the image wrapper or detail block (on the backdrop itself)
@@ -155,7 +217,7 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
         }
         
         // Copy share link of this platform
-        const shareUrl = `${window.location.origin}${window.location.pathname}#home?pin=${img.id}`;
+        const shareUrl = `${window.location.origin}${window.location.pathname}?pin=${img.id}`;
         await navigator.clipboard.writeText(shareUrl);
         
         shareBtn.classList.remove('btn-secondary');
