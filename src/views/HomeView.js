@@ -13,6 +13,7 @@ export const HomeView = {
   selectedDateFilter: 'all', // 'all' | 'day' | 'week' | 'month'
   selectedShapeFilter: 'all', // 'all' | 'portrait' | 'landscape' | 'square'
   page: 0,
+  activeFetchId: 0,
   hasMore: false,
   loading: false,
 
@@ -84,6 +85,7 @@ export const HomeView = {
 
   fetchImages: async function() {
     this.loading = true;
+    const currentFetchId = ++this.activeFetchId;
     try {
       const user = window.appState?.currentUser;
       const supabase = user ? await getSupabase() : supabasePublic;
@@ -120,19 +122,32 @@ export const HomeView = {
       const { data, error } = await query;
       if (error) throw error;
 
+      if (currentFetchId !== this.activeFetchId) return;
+
       if (data) {
         let fetchedData = data || [];
         // Apply Shape/Orientation filter client-side by pre-resolving aspects
         if (this.selectedShapeFilter && this.selectedShapeFilter !== 'all') {
           fetchedData = await this.filterImagesByShape(fetchedData, this.selectedShapeFilter);
         }
-        this.images = [...this.images, ...fetchedData];
+        
+        if (currentFetchId !== this.activeFetchId) return;
+
+        if (this.page === 0) {
+          this.images = fetchedData;
+        } else {
+          this.images = [...this.images, ...fetchedData];
+        }
         this.hasMore = data.length === PAGE_SIZE;
       }
     } catch (err) {
-      console.error("Error fetching gallery images:", err);
+      if (currentFetchId === this.activeFetchId) {
+        console.error("Error fetching gallery images:", err);
+      }
     } finally {
-      this.loading = false;
+      if (currentFetchId === this.activeFetchId) {
+        this.loading = false;
+      }
     }
   },
 

@@ -117,7 +117,6 @@ export const setupHeaderEvents = (user, onSearch) => {
     logoutBtn.addEventListener('click', async () => {
       try {
         await logout();
-        window.appState.navigate('/');
       } catch (err) {
         alert("Logout failed: " + err.message);
       }
