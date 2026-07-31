@@ -450,7 +450,7 @@ export const AdminView = {
       <tr id="user-row-${u.id}">
         <td>
           <div style="display: flex; align-items: center; gap: 12px;">
-            <img src="${u.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+            <img src="${u.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" alt="${u.display_name || 'Creator'} Avatar" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
             <div>
               <div style="font-weight: 600; display: flex; align-items: center; gap: 6px; color: var(--text-primary);">
                 <span>${u.display_name || 'Creator'}</span>
@@ -493,7 +493,7 @@ export const AdminView = {
       return `
         <tr id="img-row-${img.id}">
           <td>
-            <img src="${thumbUrl}" style="width: 50px; height: 50px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color); cursor: pointer;" onclick="sessionStorage.setItem('lightbox_referrer', '/admin'); window.appState.navigate('/pin/${window.appState.slugify(img.title)}--${img.id}')">
+            <img src="${thumbUrl}" alt="${img.title} Thumbnail" style="width: 50px; height: 50px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color); cursor: pointer;" onclick="sessionStorage.setItem('lightbox_referrer', '/admin'); window.appState.navigate('/pin/${window.appState.slugify(img.title)}--${img.id}')">
           </td>
           <td>
             <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; color: var(--text-primary);">${img.title}</div>

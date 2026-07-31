@@ -1,3 +1,1 @@
-# Google AdSense Ads.txt file placeholder
-# Replace the publisher ID (pub-0000000000000000) with your actual Google AdSense publisher ID when setting up monetization.
-google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
+google.com, pub-2458897753508445, DIRECT, f08c47fec0942fa0

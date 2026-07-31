@@ -438,6 +438,11 @@ const openLightboxOverlay = async (imageId) => {
     // Track view interest
     trackUserView(data);
 
+    // Update SEO Metadata for search bot index crawls
+    const imageUrl = data.drive_view_link || `https://lh3.googleusercontent.com/d/${data.drive_file_id}`;
+    const cleanDesc = data.description || `PinGrid image discovery details page - ${data.title}`;
+    updateSEOMetadata(data.title, cleanDesc, imageUrl);
+
     wrapper.innerHTML = renderLightbox(data, window.appState.currentUser, window.appState.isAdmin);
     
     setupLightboxEvents(data, window.appState.currentUser, window.appState.isAdmin, {
@@ -668,7 +673,7 @@ const updateDrawerHTML = (user, isAdmin) => {
     <!-- Mobile User Card (Only shown inside drawer on mobile) -->
     ${user ? `
       <div class="mobile-drawer-profile" style="padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.02);">
-        <img src="${user.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color);">
+        <img src="${user.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" alt="User Avatar" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color);">
         <div style="overflow: hidden;">
           <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${user.displayName || 'Creator'}</div>
           <div style="font-size: 0.75rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;">${user.email}</div>
@@ -773,33 +778,39 @@ const parseUrl = () => {
 };
 
 // --- SEO METADATA UPDATER ---
-const updateSEOMetadata = (title, description) => {
-  const siteName = window.appState.siteSettings.site_name || 'PinGrid';
+const updateSEOMetadata = (title, description, imageUrl = null) => {
+  const siteName = window.appState.siteSettings?.site_name || 'PinGrid';
   document.title = `${title} | ${siteName}`;
   
-  let metaDesc = document.querySelector('meta[name="description"]');
-  if (!metaDesc) {
-    metaDesc = document.createElement('meta');
-    metaDesc.name = 'description';
-    document.head.appendChild(metaDesc);
-  }
-  metaDesc.content = description;
-  
-  let ogTitle = document.querySelector('meta[property="og:title"]');
-  if (!ogTitle) {
-    ogTitle = document.createElement('meta');
-    ogTitle.setAttribute('property', 'og:title');
-    document.head.appendChild(ogTitle);
-  }
-  ogTitle.content = `${title} | ${siteName}`;
+  const setMeta = (query, name, value, isProperty = false) => {
+    let el = document.querySelector(query);
+    if (!el) {
+      el = document.createElement('meta');
+      if (isProperty) el.setAttribute('property', name);
+      else el.name = name;
+      document.head.appendChild(el);
+    }
+    el.content = value;
+  };
 
-  let ogDesc = document.querySelector('meta[property="og:description"]');
-  if (!ogDesc) {
-    ogDesc = document.createElement('meta');
-    ogDesc.setAttribute('property', 'og:description');
-    document.head.appendChild(ogDesc);
+  setMeta('meta[name="description"]', 'description', description);
+  setMeta('meta[property="og:title"]', 'og:title', `${title} | ${siteName}`, true);
+  setMeta('meta[property="og:description"]', 'og:description', description, true);
+  setMeta('meta[property="og:url"]', 'og:url', window.location.href, true);
+  setMeta('meta[property="og:type"]', 'og:type', imageUrl ? 'article' : 'website', true);
+  
+  setMeta('meta[name="twitter:card"]', 'twitter:card', imageUrl ? 'summary_large_image' : 'summary');
+  setMeta('meta[name="twitter:title"]', 'twitter:title', `${title} | ${siteName}`);
+  setMeta('meta[name="twitter:description"]', 'twitter:description', description);
+
+  if (imageUrl) {
+    setMeta('meta[property="og:image"]', 'og:image', imageUrl, true);
+    setMeta('meta[name="twitter:image"]', 'twitter:image', imageUrl);
+  } else {
+    const defaultCover = window.location.origin + '/favicon.svg';
+    setMeta('meta[property="og:image"]', 'og:image', defaultCover, true);
+    setMeta('meta[name="twitter:image"]', 'twitter:image', defaultCover);
   }
-  ogDesc.content = description;
 };
 // --- SEO-FRIENDLY URL SLUG GENERATOR ---
 const slugify = (text) => {

@@ -148,7 +148,7 @@ export const HomeView = {
       return `
         <div class="trending-collection-card glass" style="border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column; cursor: pointer; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);" onclick="event.preventDefault(); window.appState.navigate('/board/${window.appState.slugify(b.name)}--${b.id}')">
           <div style="height: 120px; overflow: hidden; position: relative;">
-            <img src="${coverImg}" style="width: 100%; height: 100%; object-fit: cover;" class="collection-cover-img">
+            <img src="${coverImg}" alt="${b.name} Collection Cover" style="width: 100%; height: 100%; object-fit: cover;" class="collection-cover-img">
             <span style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.65); color: #fff; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.7rem; font-weight: 600; backdrop-filter: blur(4px);">
               ${count} ${count === 1 ? 'Pin' : 'Pins'}
             </span>

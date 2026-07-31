@@ -244,7 +244,7 @@ export const ProfileView = {
           const imageUrl = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
           return `
             <div class="pin-card" style="aspect-ratio: 1; position: relative; cursor: pointer; border-radius: var(--radius-md);" class="liked-pin-item" onclick="sessionStorage.setItem('lightbox_referrer', window.location.pathname + window.location.search); window.appState.navigate('/pin/${window.appState.slugify(img.title)}--${img.id}')">
-              <img src="${imageUrl}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy">
+              <img src="${imageUrl}" alt="${img.title}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy">
               <div class="pin-overlay" style="opacity: 0; hover: opacity: 1;">
                 <div class="pin-bottom-info" style="position: absolute; bottom: 12px; left: 12px; right: 12px;">
                   <h4 style="font-size: 0.85rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff;">${img.title}</h4>
