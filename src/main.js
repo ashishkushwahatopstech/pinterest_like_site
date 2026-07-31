@@ -16,6 +16,7 @@ import { renderHeader, setupHeaderEvents } from './components/Header';
 import { renderFooter } from './components/Footer';
 import { renderModalsHtml, showConnectModal, showCreateBoardModal, showUploadModal } from './components/Modals';
 import { renderLightbox, setupLightboxEvents } from './components/Lightbox';
+import { renderMasonryGrid, setupGridEvents } from './components/MasonryGrid';
 
 // Global application state
 window.appState = {
@@ -410,6 +411,78 @@ const openLightboxOverlay = async (imageId) => {
         alert(`Image visibility updated.`);
       }
     });
+
+    // Fetch related images asynchronously
+    (async () => {
+      try {
+        let relatedQuery = supabasePublic
+          .from('images')
+          .select('*, users!images_user_id_fkey(*), boards(*)')
+          .eq('is_public', true)
+          .neq('id', imageId);
+
+        if (data.board_id) {
+          relatedQuery = relatedQuery.eq('board_id', data.board_id);
+        }
+
+        relatedQuery = relatedQuery.limit(8);
+        let { data: relatedImages } = await relatedQuery;
+
+        const relatedCount = relatedImages ? relatedImages.length : 0;
+        if (relatedCount < 8) {
+          let fallbackQuery = supabasePublic
+            .from('images')
+            .select('*, users!images_user_id_fkey(*), boards(*)')
+            .eq('is_public', true)
+            .neq('id', imageId)
+            .order('created_at', { ascending: false });
+
+          let { data: fallbackImages } = await fallbackQuery;
+
+          if (fallbackImages) {
+            const relatedIds = (relatedImages || []).map(r => r.id);
+            const filteredFallback = fallbackImages.filter(f => !relatedIds.includes(f.id));
+            const needed = 8 - relatedCount;
+            relatedImages = [...(relatedImages || []), ...filteredFallback.slice(0, needed)];
+          }
+        }
+
+        if (relatedImages && relatedImages.length > 0) {
+          const relatedSection = document.getElementById('lightbox-related-section');
+          const relatedGridContainer = document.getElementById('lightbox-related-grid-container');
+          
+          if (relatedSection && relatedGridContainer) {
+            relatedGridContainer.innerHTML = renderMasonryGrid(relatedImages, false, 'gallery-masonry-grid-related');
+            relatedSection.style.display = 'block';
+
+            const relatedGridEl = document.getElementById('gallery-masonry-grid-related');
+            if (relatedGridEl) {
+              setupGridEvents(
+                relatedGridEl,
+                (pinId) => {
+                  // Smoothly switch to the newly clicked image inside the open lightbox
+                  const currentPath = window.location.pathname;
+                  const currentSearch = window.location.search;
+                  const params = new URLSearchParams(currentSearch);
+                  params.set('pin', pinId);
+                  window.appState.navigate(`${currentPath}?${params.toString()}`);
+
+                  // Scroll to top of the lightbox modal cleanly
+                  const modal = document.getElementById('lightbox-modal');
+                  if (modal) modal.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+                async (pinId, likeBtn) => {
+                  await window.appState.toggleLike(pinId, likeBtn);
+                }
+              );
+            }
+          }
+        }
+      } catch (rErr) {
+        console.warn("Failed to load related images:", rErr);
+      }
+    })();
+
   } catch (err) {
     console.error("Error opening lightbox:", err);
   }

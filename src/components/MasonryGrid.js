@@ -1,6 +1,6 @@
 // MasonryGrid Component - Pinterest-style masonry grid layout with infinite scroll and event delegation
 
-export const renderMasonryGrid = (images, hasMore = false) => {
+export const renderMasonryGrid = (images, hasMore = false, gridId = 'gallery-masonry-grid') => {
   if (!images || images.length === 0) {
     return `
       <div style="text-align: center; padding: 80px 24px; color: var(--text-secondary); width: 100%;">
@@ -47,7 +47,7 @@ export const renderMasonryGrid = (images, hasMore = false) => {
   }).join('');
 
   return `
-    <div class="masonry-grid" id="gallery-masonry-grid">
+    <div class="masonry-grid" id="${gridId}">
       ${itemsHtml}
     </div>
     ${hasMore ? `
