@@ -197,12 +197,13 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 0 0 2px rgba(255, 74, 122, 0.15);
 }
 
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
 body {
   background-color: var(--bg-primary);
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(255, 51, 102, 0.06) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(255, 102, 51, 0.06) 0px, transparent 50%);
-  background-attachment: fixed;
   color: var(--text-primary);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
@@ -213,6 +214,18 @@ body {
   padding-top: 72px; /* Anchor fixed header space offset */
 }
 
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(255, 51, 102, 0.06) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(255, 102, 51, 0.06) 0px, transparent 50%);
+  z-index: -1;
+  pointer-events: none;
+  transform: translateZ(0);
+}
+
 /* Header */
 .site-header {
   position: fixed;
@@ -221,7 +234,9 @@ body {
   right: 0;
   z-index: 100;
   border-bottom: 1px solid var(--border-color);
-  transition: var(--transition-normal);
+  transition: var(--transition-fast);
+  transform: translateZ(0);
+  will-change: background, backdrop-filter;
 }
 
 .site-header.scrolled {
@@ -386,6 +401,8 @@ body {
   margin-bottom: 16px;
   display: inline-block;
   width: 100%;
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 300px;
 }
 
 /* Pinterest Card */
@@ -396,7 +413,9 @@ body {
   cursor: pointer;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .pin-card:hover {
@@ -413,8 +432,11 @@ body {
 
 .pin-image-wrapper img {
   width: 100%;
+  height: auto;
   display: block;
-  transition: transform var(--transition-slow);
+  transition: transform var(--transition-normal);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .pin-card:hover .pin-image-wrapper img {
@@ -429,12 +451,13 @@ body {
   bottom: 0;
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.7) 100%);
   opacity: 0;
-  transition: opacity var(--transition-normal);
+  transition: opacity var(--transition-fast);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: 16px;
   z-index: 2;
+  will-change: opacity;
 }
 
 .pin-card:hover .pin-overlay {
@@ -448,9 +471,8 @@ body {
 }
 
 .pin-board-badge {
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
   color: #ffffff;
-  backdrop-filter: blur(6px);
   padding: 6px 12px;
   border-radius: var(--radius-full);
   font-size: 0.75rem;

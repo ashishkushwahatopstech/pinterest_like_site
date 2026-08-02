@@ -2,6 +2,7 @@ import { supabasePublic, getSupabase } from '../services/supabase';
 import { renderMasonryGrid, setupGridEvents, setupInfiniteScroll } from '../components/MasonryGrid';
 import { renderPinSkeleton } from '../components/Skeleton';
 import { sortRecommendedFeed, trackUserSearch } from '../services/recommendations';
+import { getOptimizedImageUrl } from '../utils/image';
 
 const PAGE_SIZE = 15;
 
@@ -139,16 +140,17 @@ export const HomeView = {
     }
 
     const cardsHtml = trendingBoards.map(b => {
-      const coverImg = b.images && b.images.length > 0
+      const rawCover = b.images && b.images.length > 0
         ? (b.images[0].drive_view_link || `https://lh3.googleusercontent.com/d/${b.images[0].drive_file_id}`)
         : 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=600&q=80';
+      const coverImg = getOptimizedImageUrl(rawCover, 400);
       
       const count = b.images ? b.images.length : 0;
       
       return `
         <div class="trending-collection-card glass" style="border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column; cursor: pointer; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);" onclick="event.preventDefault(); window.appState.navigate('/board/${window.appState.slugify(b.name)}--${b.id}')">
           <div style="height: 120px; overflow: hidden; position: relative;">
-            <img src="${coverImg}" alt="${b.name} Collection Cover" style="width: 100%; height: 100%; object-fit: cover;" class="collection-cover-img">
+            <img src="${coverImg}" alt="${b.name} Collection Cover" style="width: 100%; height: 100%; object-fit: cover;" class="collection-cover-img" loading="lazy" decoding="async">
             <span style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.65); color: #fff; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.7rem; font-weight: 600; backdrop-filter: blur(4px);">
               ${count} ${count === 1 ? 'Pin' : 'Pins'}
             </span>

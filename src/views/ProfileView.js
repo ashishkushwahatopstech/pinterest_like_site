@@ -2,6 +2,7 @@ import { getSupabase } from '../services/supabase';
 import { renderBoardSkeleton, renderProfileSkeleton } from '../components/Skeleton';
 import { getAppStorageUsage } from '../services/drive';
 import { getGoogleDriveToken } from '../services/api';
+import { getOptimizedImageUrl } from '../utils/image';
 
 export const ProfileView = {
   containerId: 'view-container',
@@ -120,15 +121,16 @@ export const ProfileView = {
 
     // Select dynamic cover image from favorite images list or fallback
     const likedImages = this.likes.map(l => l.images).filter(Boolean);
-    const coverUrl = likedImages.length > 0
+    const rawCover = likedImages.length > 0
       ? (likedImages[0].drive_view_link || `https://lh3.googleusercontent.com/d/${likedImages[0].drive_file_id}`)
       : 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1200&q=80';
+    const coverUrl = getOptimizedImageUrl(rawCover, 800);
 
     container.innerHTML = `
       <div class="container animate-fade" style="padding-top: 24px;">
         <!-- Dynamic Profile Cover Banner -->
         <div class="profile-cover" style="height: 200px; border-radius: var(--radius-lg); overflow: hidden; position: relative; margin-bottom: -50px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
-          <img src="${coverUrl}" style="width: 100%; height: 100%; object-fit: cover; filter: blur(2px) brightness(0.65);" alt="Profile Cover">
+          <img src="${coverUrl}" style="width: 100%; height: 100%; object-fit: cover; filter: blur(2px) brightness(0.65);" alt="Profile Cover" loading="lazy" decoding="async">
           <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(15,23,42,0.4));"></div>
         </div>
 
@@ -241,10 +243,11 @@ export const ProfileView = {
     return `
       <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
         ${likedImages.map(img => {
-          const imageUrl = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
+          const rawUrl = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
+          const imageUrl = getOptimizedImageUrl(rawUrl, 400);
           return `
             <div class="pin-card" style="aspect-ratio: 1; position: relative; cursor: pointer; border-radius: var(--radius-md);" class="liked-pin-item" onclick="sessionStorage.setItem('lightbox_referrer', window.location.pathname + window.location.search); window.appState.navigate('/pin/${window.appState.slugify(img.title)}--${img.id}')">
-              <img src="${imageUrl}" alt="${img.title}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy">
+              <img src="${imageUrl}" alt="${img.title}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" decoding="async">
               <div class="pin-overlay" style="opacity: 0; hover: opacity: 1;">
                 <div class="pin-bottom-info" style="position: absolute; bottom: 12px; left: 12px; right: 12px;">
                   <h4 style="font-size: 0.85rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff;">${img.title}</h4>

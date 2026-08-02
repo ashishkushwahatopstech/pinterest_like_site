@@ -1,4 +1,4 @@
-// MasonryGrid Component - Pinterest-style masonry grid layout with infinite scroll and event delegation
+import { getOptimizedImageUrl } from '../utils/image';
 
 export const renderMasonryGrid = (images, hasMore = false, gridId = 'gallery-masonry-grid', showLoadMoreButton = false) => {
   if (!images || images.length === 0) {
@@ -12,14 +12,15 @@ export const renderMasonryGrid = (images, hasMore = false, gridId = 'gallery-mas
   }
 
   const itemsHtml = images.map(img => {
-    // Generate direct image source from Google Drive file ID
-    const imageUrl = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
+    // Generate optimized CDN thumbnail source from Google Drive or cloud storage
+    const rawUrl = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
+    const imageUrl = getOptimizedImageUrl(rawUrl, 600);
     
     return `
       <div class="masonry-item animate-fade" data-id="${img.id}">
         <div class="pin-card">
           <div class="pin-image-wrapper">
-            <img src="${imageUrl}" alt="${img.title}" loading="lazy">
+            <img src="${imageUrl}" alt="${img.title}" loading="lazy" decoding="async">
           </div>
           <div class="pin-overlay">
             <div class="pin-top-actions">

@@ -3,6 +3,7 @@ import { renderMasonryGrid, setupGridEvents } from '../components/MasonryGrid';
 import { renderPinSkeleton } from '../components/Skeleton';
 import { renameBoardFolder, deleteFromDrive } from '../services/drive';
 import { getGoogleDriveToken } from '../services/api';
+import { getOptimizedImageUrl } from '../utils/image';
 
 export const BoardView = {
   containerId: 'view-container',
@@ -119,15 +120,16 @@ export const BoardView = {
     const authorName = this.board.users?.display_name || 'Anonymous';
 
     // Select dynamic cover image from first board image or fallback
-    const coverUrl = this.images.length > 0
+    const rawCover = this.images.length > 0
       ? (this.images[0].drive_view_link || `https://lh3.googleusercontent.com/d/${this.images[0].drive_file_id}`)
       : 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1200&q=80';
+    const coverUrl = getOptimizedImageUrl(rawCover, 800);
 
     container.innerHTML = `
       <div class="container animate-fade" style="padding-top: 24px;">
         <!-- Dynamic Board Cover Banner -->
         <div class="board-cover" style="height: 200px; border-radius: var(--radius-lg); overflow: hidden; position: relative; margin-bottom: -50px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
-          <img src="${coverUrl}" style="width: 100%; height: 100%; object-fit: cover; filter: blur(2px) brightness(0.75);" alt="Board Cover">
+          <img src="${coverUrl}" style="width: 100%; height: 100%; object-fit: cover; filter: blur(2px) brightness(0.75);" alt="Board Cover" loading="lazy" decoding="async">
           <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(15,23,42,0.4));"></div>
         </div>
 
