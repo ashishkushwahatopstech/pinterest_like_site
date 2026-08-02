@@ -4,6 +4,7 @@ import { renderPinSkeleton } from '../components/Skeleton';
 import { renameBoardFolder, deleteFromDrive } from '../services/drive';
 import { getGoogleDriveToken } from '../services/api';
 import { getOptimizedImageUrl } from '../utils/image';
+import { requestPremiumFeature } from '../services/premium';
 
 export const BoardView = {
   containerId: 'view-container',
@@ -147,10 +148,16 @@ export const BoardView = {
               <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 6px;">Created by ${authorName}</p>
             </div>
             
-            <div style="margin-bottom: 10px; display: flex; gap: 8px; align-items: center;">
+            <div style="margin-bottom: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
               <!-- Slideshow Button -->
               <button id="board-slideshow-btn" class="btn btn-glass btn-icon" title="Play Slideshow" style="background: var(--bg-secondary); border: 1px solid var(--border-color); width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer;">
                 <span class="material-icons-outlined" style="font-size: 1.5rem; color: var(--accent-primary);">slideshow</span>
+              </button>
+
+              <!-- PRO Batch Download Button -->
+              <button id="board-batch-download-btn" class="btn btn-primary" style="display: flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%); color: #000; font-weight: 700; border: none; box-shadow: 0 4px 14px rgba(255, 215, 0, 0.35); cursor: pointer;" title="Batch Download Collection">
+                <span class="material-icons-outlined" style="font-size: 1.1rem;">workspace_premium</span>
+                <span>Batch Download (PRO)</span>
               </button>
 
               ${this.isOwner ? `
@@ -229,6 +236,54 @@ export const BoardView = {
           }
         }
       );
+    }
+
+    // Batch Download Collection (PRO)
+    const batchBtn = document.getElementById('board-batch-download-btn');
+    if (batchBtn) {
+      batchBtn.onclick = () => {
+        if (!this.images || this.images.length === 0) {
+          alert("No images in this collection to download!");
+          return;
+        }
+
+        requestPremiumFeature('Batch Collection Downloader', async () => {
+          const originalText = batchBtn.innerHTML;
+          batchBtn.style.pointerEvents = 'none';
+
+          for (let i = 0; i < this.images.length; i++) {
+            const img = this.images[i];
+            batchBtn.innerHTML = `<span class="material-icons-outlined" style="animation: loading 1s infinite;">hourglass_empty</span><span>Downloading (${i + 1}/${this.images.length})...</span>`;
+            
+            try {
+              const fileUrl = img.drive_download_link || img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
+              const response = await fetch(fileUrl);
+              if (response.ok) {
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const tempLink = document.createElement('a');
+                tempLink.href = blobUrl;
+                const fileExt = fileUrl.split('?')[0].split('.').pop() || 'png';
+                const safeExt = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'].includes(fileExt.toLowerCase()) ? fileExt : 'png';
+                tempLink.download = `${img.title || 'image'}_${i + 1}.${safeExt}`;
+                document.body.appendChild(tempLink);
+                tempLink.click();
+                document.body.removeChild(tempLink);
+                URL.revokeObjectURL(blobUrl);
+              }
+            } catch (err) {
+              console.warn("Batch download failed for item:", img.title);
+            }
+            
+            // Brief pause between downloads
+            await new Promise(r => setTimeout(r, 400));
+          }
+
+          batchBtn.innerHTML = originalText;
+          batchBtn.style.pointerEvents = 'auto';
+          alert(`Successfully downloaded ${this.images.length} images from "${this.board.name}"!`);
+        });
+      };
     }
 
     // Slideshow click handler

@@ -1,6 +1,8 @@
 import { makeFilePublic } from '../services/drive';
 import { getGoogleDriveToken } from '../services/api';
 import { getOptimizedImageUrl } from '../utils/image';
+import { requestPremiumFeature } from '../services/premium';
+import { extractColorPalette } from '../utils/colorPalette';
 
 export const renderLightbox = (img, currentUser, isAdmin) => {
   if (!img) return '';
@@ -89,15 +91,42 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
                       <span style="font-weight: 500;">Secondary backup copy stored in Supabase</span>
                     </div>
                   ` : ''}
+
+                  <!-- AI Color Palette Output Container (PRO Feature) -->
+                  <div id="lightbox-palette-display" style="display: none; margin-bottom: 24px; padding: 14px; border-radius: var(--radius-md); background: var(--bg-primary); border: 1px solid rgba(255, 215, 0, 0.3); animation: fadeIn 0.3s ease;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                      <div style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 700; color: var(--text-primary);">
+                        <span class="material-icons-outlined" style="color: #ffd700; font-size: 1.1rem;">auto_awesome</span>
+                        <span>AI Color Palette</span>
+                      </div>
+                      <span style="font-size: 0.7rem; color: var(--text-secondary);">Click color to copy HEX</span>
+                    </div>
+                    <div id="palette-swatches-wrapper" style="display: flex; gap: 8px; width: 100%;">
+                      <!-- Dynamically populated hex swatches -->
+                    </div>
+                  </div>
                 </div>
 
                 <div class="lightbox-actions" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 20px;">
-                  <button id="lightbox-download-btn" data-href="${img.drive_download_link || imageUrl}" data-title="${img.title}" class="btn btn-primary" style="flex: 1; min-width: 120px; gap: 8px; align-items: center; justify-content: center; display: flex; padding: 12px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
+                  <!-- Standard HD Download -->
+                  <button id="lightbox-download-btn" data-href="${img.drive_download_link || imageUrl}" data-title="${img.title}" class="btn btn-secondary" style="flex: 1; min-width: 110px; gap: 6px; align-items: center; justify-content: center; display: flex; padding: 12px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
                     <span class="material-icons-outlined">download</span>
-                    <span>Download</span>
+                    <span>HD Download</span>
                   </button>
                   
-                  <button id="lightbox-share-btn" class="btn btn-secondary" style="padding: 12px 16px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
+                  <!-- Ultra HD 4K Original Download (PRO) -->
+                  <button id="lightbox-pro-download-btn" data-href="${img.drive_download_link || rawUrl}" data-title="${img.title}" class="btn btn-primary" style="flex: 1.2; min-width: 140px; gap: 6px; align-items: center; justify-content: center; display: flex; padding: 12px; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%); color: #000; box-shadow: 0 4px 14px rgba(255, 215, 0, 0.35);">
+                    <span class="material-icons-outlined" style="font-size: 1.1rem;">workspace_premium</span>
+                    <span>4K Ultra HD</span>
+                  </button>
+
+                  <!-- AI Color Palette Button (PRO) -->
+                  <button id="lightbox-palette-btn" class="btn btn-glass" style="padding: 12px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; border: 1px solid rgba(255,215,0,0.4);" title="Extract Color Palette">
+                    <span class="material-icons-outlined" style="color: #ffd700; font-size: 1.2rem;">palette</span>
+                    <span style="font-size: 0.85rem;">Colors</span>
+                  </button>
+
+                  <button id="lightbox-share-btn" class="btn btn-secondary" style="padding: 12px 14px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
                     <span class="material-icons-outlined">share</span>
                     <span>Share</span>
                   </button>
@@ -387,6 +416,87 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
         downloadBtn.innerHTML = originalText;
         downloadBtn.style.pointerEvents = 'auto';
       }
+    });
+  }
+
+  // PRO Feature 1: Ultra HD 4K Original Download
+  const proDownloadBtn = document.getElementById('lightbox-pro-download-btn');
+  if (proDownloadBtn) {
+    proDownloadBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      requestPremiumFeature('Ultra HD 4K Original Download', async () => {
+        const originalText = proDownloadBtn.innerHTML;
+        proDownloadBtn.innerHTML = `<span class="material-icons-outlined" style="animation: loading 1s infinite;">hourglass_empty</span><span>Fetching 4K...</span>`;
+        proDownloadBtn.style.pointerEvents = 'none';
+
+        try {
+          const fileUrl = proDownloadBtn.dataset.href;
+          const response = await fetch(fileUrl);
+          if (!response.ok) throw new Error("Fetch failed");
+
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+
+          const tempLink = document.createElement('a');
+          tempLink.href = blobUrl;
+          const fileExt = fileUrl.split('?')[0].split('.').pop() || 'png';
+          const safeExt = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'].includes(fileExt.toLowerCase()) ? fileExt : 'png';
+          tempLink.download = `${proDownloadBtn.dataset.title || 'image'}_4K_UltraHD.${safeExt}`;
+
+          document.body.appendChild(tempLink);
+          tempLink.click();
+          document.body.removeChild(tempLink);
+          URL.revokeObjectURL(blobUrl);
+        } catch (err) {
+          window.open(proDownloadBtn.dataset.href, '_blank');
+        } finally {
+          proDownloadBtn.innerHTML = originalText;
+          proDownloadBtn.style.pointerEvents = 'auto';
+        }
+      });
+    });
+  }
+
+  // PRO Feature 2: AI Color Palette Extractor
+  const paletteBtn = document.getElementById('lightbox-palette-btn');
+  const paletteDisplay = document.getElementById('lightbox-palette-display');
+  const swatchesWrapper = document.getElementById('palette-swatches-wrapper');
+
+  if (paletteBtn && paletteDisplay && swatchesWrapper) {
+    paletteBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      requestPremiumFeature('AI Color Palette Generator', async () => {
+        paletteBtn.innerHTML = `<span class="material-icons-outlined" style="animation: loading 1s infinite; color: #ffd700;">hourglass_empty</span>`;
+        
+        const imgEl = document.querySelector('.lightbox-image');
+        const sampleUrl = imgEl ? imgEl.src : (img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`);
+        
+        const hexColors = await extractColorPalette(sampleUrl);
+
+        swatchesWrapper.innerHTML = hexColors.map(hex => `
+          <div class="palette-chip" data-color="${hex}" style="flex: 1; height: 36px; border-radius: var(--radius-sm); background: ${hex}; cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative; border: 1px solid rgba(255,255,255,0.2); transition: transform 0.2s;" title="Click to copy ${hex}">
+            <span class="chip-hex-label" style="font-size: 0.65rem; font-weight: 800; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${hex}</span>
+          </div>
+        `).join('');
+
+        paletteDisplay.style.display = 'block';
+        paletteBtn.innerHTML = `<span class="material-icons-outlined" style="color: #ffd700; font-size: 1.2rem;">palette</span><span style="font-size: 0.85rem;">Colors</span>`;
+
+        // Copy HEX code on chip click
+        swatchesWrapper.querySelectorAll('.palette-chip').forEach(chip => {
+          chip.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            const color = chip.dataset.color;
+            navigator.clipboard.writeText(color);
+            const label = chip.querySelector('.chip-hex-label');
+            if (label) {
+              const oldText = label.textContent;
+              label.textContent = 'COPIED!';
+              setTimeout(() => { label.textContent = oldText; }, 1200);
+            }
+          });
+        });
+      });
     });
   }
 
