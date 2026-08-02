@@ -129,9 +129,10 @@ export const BoardView = {
     container.innerHTML = `
       <div class="container animate-fade" style="padding-top: 24px;">
         <!-- Dynamic Board Cover Banner -->
-        <div class="board-cover" style="height: 200px; border-radius: var(--radius-lg); overflow: hidden; position: relative; margin-bottom: -50px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
-          <img src="${coverUrl}" style="width: 100%; height: 100%; object-fit: cover; filter: blur(2px) brightness(0.75);" alt="Board Cover" loading="lazy" decoding="async">
-          <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(15,23,42,0.4));"></div>
+        <div class="board-cover" style="height: 200px; border-radius: var(--radius-lg); overflow: hidden; position: relative; margin-bottom: -50px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); background: var(--bg-tertiary);">
+          <div class="skeleton" style="position: absolute; inset: 0; z-index: 1;"></div>
+          <img src="${coverUrl}" style="width: 100%; height: 100%; object-fit: cover; filter: blur(2px) brightness(0.75); opacity: 0; transition: opacity 0.3s ease; position: relative; z-index: 2;" alt="Board Cover" loading="lazy" decoding="async" onload="this.style.opacity='1'; const sk=this.previousElementSibling; if(sk) sk.style.display='none';" onerror="const sk=this.previousElementSibling; if(sk) sk.style.display='none';">
+          <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(15,23,42,0.4)); z-index: 3;"></div>
         </div>
 
         <!-- Board Header -->

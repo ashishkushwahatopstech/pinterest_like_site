@@ -149,9 +149,10 @@ export const HomeView = {
       
       return `
         <div class="trending-collection-card glass" style="border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column; cursor: pointer; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);" onclick="event.preventDefault(); window.appState.navigate('/board/${window.appState.slugify(b.name)}--${b.id}')">
-          <div style="height: 120px; overflow: hidden; position: relative;">
-            <img src="${coverImg}" alt="${b.name} Collection Cover" style="width: 100%; height: 100%; object-fit: cover;" class="collection-cover-img" loading="lazy" decoding="async">
-            <span style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.65); color: #fff; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.7rem; font-weight: 600; backdrop-filter: blur(4px);">
+          <div style="height: 120px; overflow: hidden; position: relative; background: var(--bg-tertiary);">
+            <div class="skeleton" style="position: absolute; inset: 0; z-index: 1;"></div>
+            <img src="${coverImg}" alt="${b.name} Collection Cover" style="width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s ease; position: relative; z-index: 2;" class="collection-cover-img" loading="lazy" decoding="async" onload="this.style.opacity='1'; const sk=this.previousElementSibling; if(sk) sk.style.display='none';" onerror="const sk=this.previousElementSibling; if(sk) sk.style.display='none';">
+            <span style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.65); color: #fff; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.7rem; font-weight: 600; z-index: 3;">
               ${count} ${count === 1 ? 'Pin' : 'Pins'}
             </span>
           </div>

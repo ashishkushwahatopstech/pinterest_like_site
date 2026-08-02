@@ -129,15 +129,17 @@ export const ProfileView = {
     container.innerHTML = `
       <div class="container animate-fade" style="padding-top: 24px;">
         <!-- Dynamic Profile Cover Banner -->
-        <div class="profile-cover" style="height: 200px; border-radius: var(--radius-lg); overflow: hidden; position: relative; margin-bottom: -50px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
-          <img src="${coverUrl}" style="width: 100%; height: 100%; object-fit: cover; filter: blur(2px) brightness(0.65);" alt="Profile Cover" loading="lazy" decoding="async">
-          <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(15,23,42,0.4));"></div>
+        <div class="profile-cover" style="height: 200px; border-radius: var(--radius-lg); overflow: hidden; position: relative; margin-bottom: -50px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); background: var(--bg-tertiary);">
+          <div class="skeleton" style="position: absolute; inset: 0; z-index: 1;"></div>
+          <img src="${coverUrl}" style="width: 100%; height: 100%; object-fit: cover; filter: blur(2px) brightness(0.65); opacity: 0; transition: opacity 0.3s ease; position: relative; z-index: 2;" alt="Profile Cover" loading="lazy" decoding="async" onload="this.style.opacity='1'; const sk=this.previousElementSibling; if(sk) sk.style.display='none';" onerror="const sk=this.previousElementSibling; if(sk) sk.style.display='none';">
+          <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(15,23,42,0.4)); z-index: 3;"></div>
         </div>
 
         <!-- Profile info -->
         <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; margin-bottom: 32px; position: relative; z-index: 10;">
-          <div class="profile-avatar" style="border: 4px solid var(--bg-secondary); box-shadow: var(--shadow-md);">
-            <img src="${avatar}" alt="Avatar">
+          <div class="profile-avatar" style="border: 4px solid var(--bg-secondary); box-shadow: var(--shadow-md); position: relative; overflow: hidden; background: var(--bg-tertiary);">
+            <div class="skeleton" style="position: absolute; inset: 0; z-index: 1;"></div>
+            <img src="${avatar}" alt="Avatar" style="opacity: 0; transition: opacity 0.3s ease; position: relative; z-index: 2;" onload="this.style.opacity='1'; const sk=this.previousElementSibling; if(sk) sk.style.display='none';" onerror="const sk=this.previousElementSibling; if(sk) sk.style.display='none';">
           </div>
           <div>
             <h1 style="font-size: 2rem; font-family: var(--font-heading);">${name}</h1>
@@ -246,9 +248,10 @@ export const ProfileView = {
           const rawUrl = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
           const imageUrl = getOptimizedImageUrl(rawUrl, 400);
           return `
-            <div class="pin-card" style="aspect-ratio: 1; position: relative; cursor: pointer; border-radius: var(--radius-md);" class="liked-pin-item" onclick="sessionStorage.setItem('lightbox_referrer', window.location.pathname + window.location.search); window.appState.navigate('/pin/${window.appState.slugify(img.title)}--${img.id}')">
-              <img src="${imageUrl}" alt="${img.title}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" decoding="async">
-              <div class="pin-overlay" style="opacity: 0; hover: opacity: 1;">
+            <div class="pin-card" style="aspect-ratio: 1; position: relative; cursor: pointer; border-radius: var(--radius-md); overflow: hidden; background: var(--bg-tertiary);" class="liked-pin-item" onclick="sessionStorage.setItem('lightbox_referrer', window.location.pathname + window.location.search); window.appState.navigate('/pin/${window.appState.slugify(img.title)}--${img.id}')">
+              <div class="skeleton" style="position: absolute; inset: 0; z-index: 1;"></div>
+              <img src="${imageUrl}" alt="${img.title}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s ease; position: relative; z-index: 2;" loading="lazy" decoding="async" onload="this.style.opacity='1'; const sk=this.previousElementSibling; if(sk) sk.style.display='none';" onerror="const sk=this.previousElementSibling; if(sk) sk.style.display='none';">
+              <div class="pin-overlay" style="opacity: 0; hover: opacity: 1; z-index: 3;">
                 <div class="pin-bottom-info" style="position: absolute; bottom: 12px; left: 12px; right: 12px;">
                   <h4 style="font-size: 0.85rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff;">${img.title}</h4>
                 </div>

@@ -66,7 +66,10 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
                 <div id="lightbox-collapsible-drawer">
                   <!-- User Profile Details Card (Inside the toggle) -->
                   <div class="lightbox-user" style="display: flex; align-items: center; gap: 12px; margin-top: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
-                    <img src="${img.users?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" alt="Avatar" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color);">
+                    <div style="position: relative; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: var(--bg-tertiary); flex-shrink: 0; border: 1px solid var(--border-color);">
+                      <div class="skeleton" style="position: absolute; inset: 0; z-index: 1;"></div>
+                      <img src="${img.users?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s ease; position: relative; z-index: 2;" onload="this.style.opacity='1'; const sk=this.previousElementSibling; if(sk) sk.style.display='none';" onerror="const sk=this.previousElementSibling; if(sk) sk.style.display='none';">
+                    </div>
                     <div>
                       <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">${img.users?.display_name || 'Anonymous'}</div>
                       <div style="font-size: 0.75rem; color: var(--text-secondary);">Uploaded ${new Date(img.created_at).toLocaleDateString()}</div>
