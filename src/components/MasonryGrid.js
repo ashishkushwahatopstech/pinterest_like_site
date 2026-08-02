@@ -19,9 +19,8 @@ export const renderMasonryGrid = (images, hasMore = false, gridId = 'gallery-mas
     return `
       <div class="masonry-item animate-fade" data-id="${img.id}">
         <div class="pin-card">
-          <div class="pin-image-wrapper" style="position: relative; min-height: 180px; background: var(--bg-tertiary);">
-            <div class="skeleton pin-image-skeleton" style="position: absolute; inset: 0; z-index: 1;"></div>
-            <img src="${imageUrl}" alt="${img.title}" loading="lazy" decoding="async" style="opacity: 0; transition: opacity 0.3s ease; display: block; width: 100%; height: auto;" onload="this.style.opacity='1'; const sk=this.previousElementSibling; if(sk) sk.style.display='none';" onerror="const sk=this.previousElementSibling; if(sk) sk.style.display='none';">
+          <div class="pin-image-wrapper">
+            <img src="${imageUrl}" alt="${img.title}" loading="lazy" decoding="async">
           </div>
           <div class="pin-overlay">
             <div class="pin-top-actions">
