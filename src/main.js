@@ -583,14 +583,18 @@ const loadBrandingSettings = async () => {
   try {
     const { data } = await supabasePublic.from('site_settings').select('*');
     data?.forEach(s => {
-      window.appState.siteSettings[s.key] = s.value;
+      try {
+        window.appState.siteSettings[s.key] = JSON.parse(s.value);
+      } catch (e) {
+        window.appState.siteSettings[s.key] = s.value;
+      }
     });
   } catch (err) {
     console.warn("Could not load branding settings, using defaults.", err);
   }
 
   // Update branding across elements
-  const siteName = window.appState.siteSettings.site_name;
+  const siteName = window.appState.siteSettings.site_name || 'PinGrid';
   
   // Update browser document title
   document.title = `${siteName} - Premium Pinterest-style Image Gallery`;
@@ -603,9 +607,11 @@ const loadBrandingSettings = async () => {
 
   // Display announcement banner if present
   const bannerWrapper = document.getElementById('announcement-banner-wrapper');
-  const annText = window.appState.siteSettings.announcement;
+  const annRaw = window.appState.siteSettings.announcement;
+  const annText = (typeof annRaw === 'string' ? annRaw : '').trim();
+  
   if (bannerWrapper) {
-    if (annText) {
+    if (annText && annText !== '""') {
       bannerWrapper.innerHTML = `
         <div class="announcement-banner">
           <span>${annText}</span>
@@ -614,6 +620,7 @@ const loadBrandingSettings = async () => {
       bannerWrapper.style.display = 'block';
     } else {
       bannerWrapper.style.display = 'none';
+      bannerWrapper.innerHTML = '';
     }
   }
 };
