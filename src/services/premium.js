@@ -7,6 +7,10 @@
 const REWARD_PASS_KEY = 'pingrid_reward_pass_expires';
 
 export const isPremiumUnlocked = () => {
+  // If Reward Ads system is turned OFF by Admin (e.g. pending AdSense approval), everyone gets instant direct access!
+  const isRewardAdsEnabled = window.appState?.siteSettings?.enable_reward_ads ?? false;
+  if (!isRewardAdsEnabled) return true;
+
   // Check admin status
   if (window.appState?.isAdmin) return true;
 

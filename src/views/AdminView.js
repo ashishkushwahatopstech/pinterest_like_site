@@ -429,6 +429,19 @@ export const AdminView = {
                 </div>
               </div>
 
+              <div class="form-group" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">Require Ads for PRO Features</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">Turn ON after AdSense approval. Keep OFF for direct free 4K downloads & AI tools.</div>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="config-enable-reward-ads" ${this.settings.enable_reward_ads ? 'checked' : ''}>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+
               <button type="submit" id="config-save-btn" class="btn btn-primary" style="width: 100%; margin-top: 24px;">
                 Save Configuration
               </button>
@@ -720,6 +733,7 @@ export const AdminView = {
         const siteName = document.getElementById('config-site-name').value.trim();
         const announcement = document.getElementById('config-announcement').value.trim();
         const allowSignups = document.getElementById('config-allow-signups').checked;
+        const enableRewardAds = document.getElementById('config-enable-reward-ads').checked;
 
         try {
           const supabase = await getSupabase();
@@ -727,11 +741,15 @@ export const AdminView = {
           await supabase.from('site_settings').upsert({ key: 'site_name', value: JSON.stringify(siteName) });
           await supabase.from('site_settings').upsert({ key: 'announcement', value: JSON.stringify(announcement) });
           await supabase.from('site_settings').upsert({ key: 'allow_signups', value: JSON.stringify(allowSignups) });
+          await supabase.from('site_settings').upsert({ key: 'enable_reward_ads', value: JSON.stringify(enableRewardAds) });
 
-          await this.logAdminEvent(`Updated site configurations. Name: "${siteName}", Allow Signups: ${allowSignups}`);
+          await this.logAdminEvent(`Updated site configurations. Name: "${siteName}", Allow Signups: ${allowSignups}, Require Ads: ${enableRewardAds}`);
 
-          alert("Configuration saved successfully. Refresh to see branding changes.");
-          this.settings = { site_name: siteName, announcement, allow_signups: allowSignups };
+          alert("Configuration saved successfully.");
+          this.settings = { site_name: siteName, announcement, allow_signups: allowSignups, enable_reward_ads: enableRewardAds };
+          if (window.appState?.siteSettings) {
+            window.appState.siteSettings.enable_reward_ads = enableRewardAds;
+          }
           this.renderContent();
         } catch (err) {
           alert("Failed to save config: " + err.message);
