@@ -301,8 +301,8 @@ export const BoardView = {
           <div id="slideshow-overlay" style="position: fixed; inset: 0; background: #000000; z-index: 500; display: flex; flex-direction: column; justify-content: space-between; padding: 24px; color: #ffffff; animation: fadeIn 0.3s ease;">
             <div style="display: flex; justify-content: space-between; align-items: center; z-index: 10;">
               <div>
-                <h2 style="font-family: var(--font-heading); font-size: 1.3rem; margin: 0; color: #fff;">\${this.board.name} Slideshow</h2>
-                <div id="slideshow-counter" style="font-size: 0.8rem; color: #a1a1aa; margin-top: 4px;">Image 1 of \${this.images.length}</div>
+                <h2 style="font-family: var(--font-heading); font-size: 1.3rem; margin: 0; color: #fff;">${this.board.name} Slideshow</h2>
+                <div id="slideshow-counter" style="font-size: 0.8rem; color: #a1a1aa; margin-top: 4px;">Image 1 of ${this.images.length}</div>
               </div>
               <div style="display: flex; gap: 8px;">
                 <button id="slideshow-play-pause" class="btn btn-glass" style="border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 8px 16px; border-radius: var(--radius-sm); cursor: pointer; background: rgba(255,255,255,0.1); display: flex; align-items: center; gap: 6px;">
@@ -363,7 +363,7 @@ export const BoardView = {
           setTimeout(() => {
             imgEl.src = url;
             titleEl.textContent = img.title;
-            counterEl.textContent = `Image \${currentIndex + 1} of \${this.images.length}`;
+            counterEl.textContent = `Image ${currentIndex + 1} of ${this.images.length}`;
             if (container) container.style.opacity = '1';
           }, 200);
 
@@ -386,7 +386,7 @@ export const BoardView = {
           progressInterval = setInterval(() => {
             progressPercent += (STEP / SLIDE_DURATION) * 100;
             if (progressPercent > 100) progressPercent = 0;
-            if (progressEl) progressEl.style.width = `\${progressPercent}%`;
+            if (progressEl) progressEl.style.width = `${progressPercent}%`;
           }, STEP);
         };
 
