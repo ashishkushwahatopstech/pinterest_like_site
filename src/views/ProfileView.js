@@ -8,29 +8,61 @@ import { canUserAccessRecord } from '../utils/privacy';
 
 export const ProfileView = {
   containerId: 'view-container',
+  profile: null,
   boards: [],
   likes: [],
   storageUsed: null,
   activeTab: 'boards', // 'boards' | 'likes'
+  isSelf: false,
   loading: true,
 
-  render: async function() {
+  render: async function(params = {}) {
     const user = window.appState?.currentUser;
-    if (!user) {
-      window.appState.navigate('/');
-      return;
-    }
-    if (window.appState.updateSEO) {
-      window.appState.updateSEO("Creator Profile", "Manage your cloud storage collections, edit public details, and explore your liked images gallery.");
-    }
+    const targetUsername = params.username || null;
 
     this.boards = [];
     this.likes = [];
     this.storageUsed = null;
     this.loading = true;
+    this.profile = null;
+    this.isSelf = false;
 
     const container = document.getElementById(this.containerId);
     if (!container) return;
+
+    // Fetch Target User Profile
+    const supabase = await getSupabase();
+    if (targetUsername) {
+      const { data: uByHandle } = await supabase.from('users').select('*').eq('username', targetUsername).single();
+      if (uByHandle) {
+        this.profile = uByHandle;
+      } else {
+        const { data: uById } = await supabase.from('users').select('*').eq('id', targetUsername).single();
+        this.profile = uById;
+      }
+    }
+
+    if (!this.profile && user) {
+      this.profile = window.appState.currentUserProfile || {
+        id: user.uid,
+        display_name: user.displayName,
+        email: user.email,
+        avatar_url: user.photoURL
+      };
+    }
+
+    if (!this.profile) {
+      window.appState.navigate('/');
+      return;
+    }
+
+    this.isSelf = user && user.uid === this.profile.id;
+
+    if (window.appState.updateSEO) {
+      const titleName = this.profile.channel_name || this.profile.display_name || 'Creator Profile';
+      const handleTag = this.profile.username ? `@${this.profile.username}` : '';
+      window.appState.updateSEO(`${titleName} ${handleTag}`, this.profile.channel_bio || "Explore collections and public artwork.");
+    }
 
     // Initial loading layout
     container.innerHTML = `
@@ -42,11 +74,11 @@ export const ProfileView = {
       </div>
     `;
 
-    // Fetch user boards and likes
+    // Fetch user boards, likes, and storage
     await Promise.all([
       this.fetchUserBoards(),
       this.fetchUserLikes(),
-      this.fetchStorageUsage()
+      this.isSelf ? this.fetchStorageUsage() : Promise.resolve()
     ]);
 
     this.renderContent();
@@ -55,11 +87,17 @@ export const ProfileView = {
   fetchUserBoards: async function() {
     try {
       const supabase = await getSupabase();
-      const { data, error } = await supabase
+      let boardQuery = supabase
         .from('boards')
         .select('*')
-        .eq('user_id', window.appState.currentUser.uid)
+        .eq('user_id', this.profile.id)
         .order('created_at', { ascending: false });
+
+      if (!this.isSelf && !window.appState.isAdmin) {
+        boardQuery = boardQuery.eq('is_public', true);
+      }
+
+      const { data, error } = await boardQuery;
 
       if (error) throw error;
       this.boards = data || [];
@@ -76,13 +114,13 @@ export const ProfileView = {
       const { data, error } = await supabase
         .from('likes')
         .select('*, images(*, users!images_user_id_fkey(*), boards(*))')
-        .eq('user_id', user.uid)
+        .eq('user_id', this.profile.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       const rawLikes = data || [];
       // Filter out any liked image that became strictly private or unauthorized
-      this.likes = rawLikes.filter(l => l.images && canUserAccessRecord(l.images, user, isAdmin) && canUserAccessRecord(l.images.boards, user, isAdmin));
+      this.likes = rawLikes.filter(l => l.images && canUserAccessRecord(l.images, user, isAdmin) && (!l.images.boards || canUserAccessRecord(l.images.boards, user, isAdmin)));
     } catch (err) {
       console.error("Error fetching user liked images:", err);
     } finally {
@@ -120,10 +158,11 @@ export const ProfileView = {
     const container = document.getElementById(this.containerId);
     if (!container) return;
 
-    const user = window.appState.currentUser;
-    const name = user.displayName || 'Creator';
-    const email = user.email;
-    const avatar = user.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80';
+    const profile = this.profile;
+    const channelName = profile.channel_name || profile.display_name || 'Creator';
+    const username = profile.username ? `@${profile.username}` : '';
+    const bio = profile.channel_bio || '';
+    const avatar = profile.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80';
 
     // Select dynamic cover image from favorite images list or fallback
     const likedImages = this.likes.map(l => l.images).filter(Boolean);
@@ -131,9 +170,10 @@ export const ProfileView = {
       ? (likedImages[0].drive_view_link || `https://lh3.googleusercontent.com/d/${likedImages[0].drive_file_id}`)
       : 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1200&q=80';
     const coverUrl = getOptimizedImageUrl(rawCover, 800);
+
     const breadcrumbHtml = renderBreadcrumb([
       { label: 'Home', url: '/', icon: 'home' },
-      { label: 'My Profile', icon: 'person' }
+      { label: this.isSelf ? 'My Profile' : (username || channelName), icon: 'person' }
     ]);
 
     container.innerHTML = `
@@ -151,24 +191,45 @@ export const ProfileView = {
             <img src="${avatar}" alt="Avatar">
           </div>
           <div>
-            <h1 style="font-size: 2rem; font-family: var(--font-heading);">${name}</h1>
-            <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 2px;">${email}</p>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;">
+              <h1 style="font-size: 2rem; font-family: var(--font-heading); margin: 0;">${channelName}</h1>
+              ${username ? `
+                <span class="btn-glass" style="padding: 4px 10px; font-size: 0.8rem; border-radius: var(--radius-full); font-weight: 700; color: var(--accent-primary); border: 1px solid var(--border-color);">
+                  ${username}
+                </span>
+              ` : ''}
+            </div>
+
+            ${bio ? `
+              <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 8px; max-width: 520px; line-height: 1.5; margin-left: auto; margin-right: auto;">${bio}</p>
+            ` : ''}
           </div>
           
-          <div style="display: flex; gap: 24px; margin-top: 8px;">
+          <div style="display: flex; gap: 24px; margin-top: 8px; flex-wrap: wrap; justify-content: center;">
             <div class="profile-stat-item">
               <span class="profile-stat-count">${this.boards.length}</span>
-              <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Boards</span>
+              <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Collections</span>
             </div>
             <div class="profile-stat-item">
               <span class="profile-stat-count">${this.likes.length}</span>
               <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Likes</span>
             </div>
-            <div class="profile-stat-item">
-              <span class="profile-stat-count">${this.formatBytes(this.storageUsed)}</span>
-              <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Drive Space Used</span>
-            </div>
+            ${this.isSelf && this.storageUsed !== null ? `
+              <div class="profile-stat-item">
+                <span class="profile-stat-count">${this.formatBytes(this.storageUsed)}</span>
+                <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Drive Space</span>
+              </div>
+            ` : ''}
           </div>
+
+          ${this.isSelf ? `
+            <div style="margin-top: 8px;">
+              <button onclick="window.appState.navigate('/settings?tab=channel')" class="btn btn-secondary btn-sm" style="padding: 8px 16px; font-size: 0.85rem; font-weight: 600; border-radius: var(--radius-full); display: inline-flex; align-items: center; gap: 6px;">
+                <span class="material-icons-outlined" style="font-size: 1rem;">tune</span>
+                <span>Edit Creator Channel</span>
+              </button>
+            </div>
+          ` : ''}
         </div>
 
         <!-- Navigation Tabs -->

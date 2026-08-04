@@ -61,7 +61,7 @@ import { InfoView } from './views/InfoView';
 // Components
 import { renderHeader, setupHeaderEvents } from './components/Header';
 import { renderFooter } from './components/Footer';
-import { renderModalsHtml, showConnectModal, showCreateBoardModal, showUploadModal } from './components/Modals';
+import { renderModalsHtml, showConnectModal, showCreateBoardModal, showUploadModal, showCreatorChannelGateModal } from './components/Modals';
 import { renderLightbox, setupLightboxEvents } from './components/Lightbox';
 import { renderMasonryGrid, setupGridEvents } from './components/MasonryGrid';
 
@@ -107,6 +107,16 @@ window.appState = {
   
   // Expose triggers
   showCreateBoard: () => {
+    if (!window.appState.currentUser) {
+      loginWithGoogle();
+      return;
+    }
+
+    if (!window.appState.isCreator) {
+      showCreatorChannelGateModal();
+      return;
+    }
+
     showCreateBoardModal(async (name, isPublic) => {
       const supabase = await getSupabase();
       const accessToken = await getGoogleDriveToken();
@@ -149,6 +159,16 @@ window.appState = {
   },
 
   showUpload: (preselectedBoardId = null) => {
+    if (!window.appState.currentUser) {
+      loginWithGoogle();
+      return;
+    }
+
+    if (!window.appState.isCreator) {
+      showCreatorChannelGateModal();
+      return;
+    }
+
     // Fetch user boards
     getSupabase().then(async (supabase) => {
       const { data: boards, error } = await supabase
@@ -1057,6 +1077,12 @@ async function route() {
   } else if (path.startsWith('board/')) {
     const boardId = parseBoardIdFromPath(path);
     await BoardView.render({ id: boardId });
+  } else if (path.startsWith('u/') || path.startsWith('user/')) {
+    const username = path.split('/')[1];
+    await ProfileView.render({ username });
+  } else if (path.startsWith('profile/')) {
+    const userSegment = path.split('/')[1];
+    await ProfileView.render({ username: userSegment });
   } else if (path === 'profile') {
     await ProfileView.render();
   } else if (path === 'settings') {
@@ -1147,6 +1173,10 @@ const initApp = async () => {
 
         if (error) throw error;
 
+        const dbUser = data?.[0] || null;
+        window.appState.currentUserProfile = dbUser;
+        window.appState.isCreator = !!dbUser?.is_creator;
+
         // Fetch user's liked image IDs for unfilled/filled like button status
         try {
           const { data: likesData } = await supabase
@@ -1160,13 +1190,13 @@ const initApp = async () => {
         }
 
         // Check if user is suspended
-        if (data && data[0]?.is_suspended) {
+        if (dbUser?.is_suspended) {
           alert("Your account is suspended by the administrator.");
           await logout();
           return;
         }
 
-        window.appState.isAdmin = data?.[0]?.is_admin || false;
+        window.appState.isAdmin = dbUser?.is_admin || false;
         updateDrawerHTML(user, window.appState.isAdmin);
 
         // Update header and mobile menu with admin visibility

@@ -14,8 +14,15 @@ export const SettingsView = {
       return;
     }
 
+    // Support tab query parameter (e.g. /settings?tab=channel)
+    const params = new URLSearchParams(window.location.search);
+    const requestedTab = params.get('tab');
+    if (requestedTab) {
+      this.activeSection = requestedTab;
+    }
+
     if (window.appState.updateSEO) {
-      window.appState.updateSEO("Cloud Storage Settings", "Configure your cloud storage connections, toggle secondary backup parameters, and manage Google Drive options.");
+      window.appState.updateSEO("Cloud Storage Settings", "Configure your creator channel handle, cloud storage connections, and appearance parameters.");
     }
 
     const container = document.getElementById(this.containerId);
@@ -57,6 +64,10 @@ export const SettingsView = {
           <!-- Sidebar Navigation Wrapper -->
           <div class="settings-sidebar-wrapper">
             <nav class="settings-sidebar">
+              <button class="settings-nav-btn ${this.activeSection === 'channel' ? 'active' : ''}" id="settings-nav-channel" style="color: var(--accent-primary); font-weight: 700;">
+                <span class="material-icons-outlined" style="font-size: 1.2rem; vertical-align: middle; margin-right: 8px;">campaign</span>
+                <span style="vertical-align: middle;">Creator Channel</span>
+              </button>
               <button class="settings-nav-btn ${this.activeSection === 'general' ? 'active' : ''}" id="settings-nav-general">
                 <span class="material-icons-outlined" style="font-size: 1.2rem; vertical-align: middle; margin-right: 8px;">person</span>
                 <span style="vertical-align: middle;">General</span>
@@ -78,19 +89,96 @@ export const SettingsView = {
 
           <!-- Content Panel -->
           <div class="settings-content glass">
-            ${this.activeSection === 'general' 
-              ? this.renderGeneralSection(name, email, avatar) 
-              : (this.activeSection === 'appearance'
-                  ? this.renderAppearanceSection()
-                  : (this.activeSection === 'advanced' 
-                      ? this.renderAdvancedSection() 
-                      : this.renderAboutSection()))}
+            ${this.activeSection === 'channel'
+              ? this.renderChannelSection()
+              : (this.activeSection === 'general' 
+                  ? this.renderGeneralSection(name, email, avatar) 
+                  : (this.activeSection === 'appearance'
+                      ? this.renderAppearanceSection()
+                      : (this.activeSection === 'advanced' 
+                          ? this.renderAdvancedSection() 
+                          : this.renderAboutSection())))}
           </div>
         </div>
       </div>
     `;
 
     this.setupEvents();
+  },
+
+  renderChannelSection: function() {
+    const profile = window.appState.currentUserProfile || {};
+    const isCreator = window.appState.isCreator;
+    const currentUsername = profile.username || '';
+    const currentChannelName = profile.channel_name || profile.display_name || (window.appState.currentUser?.displayName || '');
+    const currentBio = profile.channel_bio || '';
+
+    return `
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+        <div>
+          <h2 style="font-size: 1.4rem; font-family: var(--font-heading); margin: 0; display: flex; align-items: center; gap: 8px;">
+            <span class="material-icons-outlined" style="color: var(--accent-primary);">campaign</span>
+            <span>Creator Channel Setup</span>
+          </h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
+            Set up your unique channel handle and profile details to unlock board creation and image uploads.
+          </p>
+        </div>
+        
+        <span class="btn-glass" style="padding: 6px 12px; font-size: 0.75rem; border-radius: var(--radius-full); font-weight: 700; color: ${isCreator ? '#22c55e' : '#ff3366'}; border: 1px solid ${isCreator ? 'rgba(34, 197, 94, 0.3)' : 'rgba(255, 51, 102, 0.3)'};">
+          ${isCreator ? '✅ Creator Channel Active' : '🔒 Channel Required for Uploads'}
+        </span>
+      </div>
+
+      ${isCreator ? `
+        <div style="margin-bottom: 24px; padding: 14px 18px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+          <div>
+            <div style="font-weight: 700; color: #22c55e; font-size: 0.9rem;">Your Public Creator Handle & URL is Live</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">
+              Direct Link: <code>${window.location.origin}/u/${currentUsername}</code>
+            </div>
+          </div>
+          <a href="/u/${currentUsername}" class="btn btn-primary btn-sm" style="padding: 6px 14px; font-size: 0.8rem; font-weight: 700;">
+            <span>View Channel</span>
+            <span class="material-icons-outlined" style="font-size: 0.9rem; margin-left: 4px;">open_in_new</span>
+          </a>
+        </div>
+      ` : ''}
+
+      <form id="creator-channel-form">
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label class="form-label" for="channel-username-input" style="font-weight: 700; font-size: 0.9rem;">
+            Unique Handle / Username <span style="color: #ff3366;">*</span>
+          </label>
+          <div style="position: relative;">
+            <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 700; color: var(--text-muted); user-select: none;">@</span>
+            <input type="text" id="channel-username-input" class="form-control" style="padding-left: 32px;" placeholder="e.g. ashish_studio" value="${currentUsername}" required maxlength="30" pattern="[a-z0-9_]+" autocomplete="off">
+          </div>
+          <div id="username-status-msg" style="font-size: 0.75rem; margin-top: 6px; color: var(--text-secondary);">
+            Lowercase letters, numbers, and underscores only (3-30 characters). URL: /u/@handle
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label class="form-label" for="channel-name-input" style="font-weight: 700; font-size: 0.9rem;">
+            Channel Display Name <span style="color: #ff3366;">*</span>
+          </label>
+          <input type="text" id="channel-name-input" class="form-control" placeholder="e.g. Ashish's Creative Studio" value="${currentChannelName}" required maxlength="60" autocomplete="off">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 24px;">
+          <label class="form-label" for="channel-bio-input" style="font-weight: 700; font-size: 0.9rem;">
+            Channel Bio / Description
+          </label>
+          <textarea id="channel-bio-input" class="form-control" rows="3" placeholder="Tell visitors about your collections, photography, or digital artwork..." maxlength="300">${currentBio}</textarea>
+        </div>
+
+        <button type="submit" id="save-channel-btn" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span class="material-icons-outlined">${isCreator ? 'save' : 'rocket_launch'}</span>
+          <span>${isCreator ? 'Save Channel Changes' : '🚀 Launch Creator Channel & Unlock Uploads'}</span>
+        </button>
+      </form>
+    `;
   },
 
   renderGeneralSection: function(name, email, avatar) {
@@ -350,10 +438,18 @@ export const SettingsView = {
     }
 
     // Nav buttons
+    const navChannel = document.getElementById('settings-nav-channel');
     const navGeneral = document.getElementById('settings-nav-general');
     const navAppearance = document.getElementById('settings-nav-appearance');
     const navAdvanced = document.getElementById('settings-nav-advanced');
     const navAbout = document.getElementById('settings-nav-about');
+
+    if (navChannel) {
+      navChannel.onclick = () => {
+        this.activeSection = 'channel';
+        this.renderContent();
+      };
+    }
 
     if (navGeneral && navAppearance && navAdvanced && navAbout) {
       navGeneral.onclick = () => {
@@ -372,6 +468,90 @@ export const SettingsView = {
         this.activeSection = 'about';
         this.renderContent();
       };
+    }
+
+    // Creator Channel section handlers
+    if (this.activeSection === 'channel') {
+      const channelForm = document.getElementById('creator-channel-form');
+      if (channelForm) {
+        channelForm.onsubmit = async (e) => {
+          e.preventDefault();
+          const usernameInput = document.getElementById('channel-username-input');
+          const nameInput = document.getElementById('channel-name-input');
+          const bioInput = document.getElementById('channel-bio-input');
+          const saveBtn = document.getElementById('save-channel-btn');
+
+          const rawUsername = usernameInput ? usernameInput.value.trim().toLowerCase() : '';
+          const cleanUsername = rawUsername.replace(/[^a-z0-9_]/g, '');
+          const channelName = nameInput ? nameInput.value.trim() : '';
+          const channelBio = bioInput ? bioInput.value.trim() : '';
+
+          if (!cleanUsername || cleanUsername.length < 3) {
+            alert("Username handle must be at least 3 characters long (letters, numbers, underscores).");
+            return;
+          }
+
+          if (!channelName) {
+            alert("Please enter a Channel Display Name.");
+            return;
+          }
+
+          saveBtn.disabled = true;
+          saveBtn.innerHTML = `
+            <span class="material-icons-outlined animate-spin">sync</span>
+            <span>Checking availability & saving...</span>
+          `;
+
+          try {
+            const supabase = await getSupabase();
+            const currentUser = window.appState.currentUser;
+
+            // 1. Validate username uniqueness
+            const { data: existingUsers, error: checkErr } = await supabase
+              .from('users')
+              .select('id')
+              .eq('username', cleanUsername)
+              .neq('id', currentUser.uid);
+
+            if (checkErr) throw checkErr;
+            if (existingUsers && existingUsers.length > 0) {
+              alert(`The handle @${cleanUsername} is already taken by another creator. Please choose a different unique handle.`);
+              saveBtn.disabled = false;
+              saveBtn.innerHTML = `
+                <span class="material-icons-outlined">rocket_launch</span>
+                <span>Launch Creator Channel & Unlock Uploads</span>
+              `;
+              return;
+            }
+
+            // 2. Update user profile in Supabase table
+            const { data: updatedUsers, error: updateErr } = await supabase
+              .from('users')
+              .update({
+                username: cleanUsername,
+                channel_name: channelName,
+                channel_bio: channelBio,
+                is_creator: true
+              })
+              .eq('id', currentUser.uid)
+              .select();
+
+            if (updateErr) throw updateErr;
+
+            const updatedProfile = updatedUsers?.[0] || null;
+            window.appState.currentUserProfile = updatedProfile;
+            window.appState.isCreator = true;
+
+            alert(`🎉 Success! Your Creator Channel (@${cleanUsername}) is now active. Collection creation and image uploads are fully unlocked.`);
+            
+            this.renderContent();
+          } catch (err) {
+            console.error("Failed to save Creator Channel:", err);
+            alert("Failed to save Creator Channel: " + err.message);
+            saveBtn.disabled = false;
+          }
+        };
+      }
     }
 
     // General section handlers

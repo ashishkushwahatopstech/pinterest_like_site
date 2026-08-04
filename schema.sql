@@ -5,12 +5,16 @@ create extension if not exists "uuid-ossp";
 -- TABLES
 -- -------------------------------------------------------------
 
--- Users Table (Tracks user profile and status)
+-- Users Table (Tracks user profile, status, and Creator Channel)
 create table public.users (
   id text primary key, -- Firebase UID
   display_name text,
   email text unique,
   avatar_url text,
+  username text unique, -- Unique creator channel handle (e.g. ashish_studio)
+  channel_name text,    -- Creator channel display name
+  channel_bio text,     -- Creator channel description
+  is_creator boolean default false not null, -- Gate for creating boards & uploading images
   is_admin boolean default false,
   is_suspended boolean default false,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null

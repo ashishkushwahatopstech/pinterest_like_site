@@ -1,4 +1,55 @@
-// Modals Component - Contains Connect Storage Consent, Create Board, and Multi-file Upload Modals
+// Modals Component - Contains Connect Storage Consent, Creator Channel Gate, Create Board, and Multi-file Upload Modals
+
+export const showCreatorChannelGateModal = () => {
+  const existing = document.getElementById('modal-creator-gate');
+  if (existing) existing.remove();
+
+  const modalHtml = `
+    <div class="modal-backdrop show" id="modal-creator-gate" style="display: flex; opacity: 1; pointer-events: auto;">
+      <div class="modal-box glass text-center animate-scale-up" style="max-width: 480px; text-align: center; padding: 40px 28px;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(255, 51, 102, 0.15); color: var(--accent-primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; border: 1px solid rgba(255, 51, 102, 0.3);">
+          <span class="material-icons-outlined" style="font-size: 2.4rem;">campaign</span>
+        </div>
+        
+        <h2 style="font-size: 1.5rem; font-family: var(--font-heading); color: var(--text-primary); margin-bottom: 12px; font-weight: 800;">Set Up Creator Channel</h2>
+        
+        <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6; margin-bottom: 28px;">
+          To create collection boards and upload images on PinGrid, you need to set up your unique <strong>Creator Channel</strong> handle inside Settings first.
+        </p>
+        
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <button id="gate-setup-channel-btn" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>Set Up Channel in Settings</span>
+            <span class="material-icons-outlined" style="font-size: 1.1rem;">arrow_forward</span>
+          </button>
+          
+          <button id="gate-cancel-btn" class="btn btn-secondary" style="width: 100%; padding: 10px;">
+            <span>Cancel</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+  const modalEl = document.getElementById('modal-creator-gate');
+  const setupBtn = document.getElementById('gate-setup-channel-btn');
+  const cancelBtn = document.getElementById('gate-cancel-btn');
+
+  if (setupBtn) {
+    setupBtn.onclick = () => {
+      if (modalEl) modalEl.remove();
+      window.appState.navigate('/settings?tab=channel');
+    };
+  }
+
+  if (cancelBtn) {
+    cancelBtn.onclick = () => {
+      if (modalEl) modalEl.remove();
+    };
+  }
+};
 
 export const renderModalsHtml = () => {
   return `
