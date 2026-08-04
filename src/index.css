@@ -722,6 +722,8 @@ body::before {
   display: grid;
   grid-template-columns: 1fr;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--bg-secondary);

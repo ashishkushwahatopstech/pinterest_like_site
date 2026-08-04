@@ -44,7 +44,7 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
         <!-- Main Detail Card -->
         <div class="lightbox-main-card glass animate-fade">
           <!-- Detail Breadcrumb Navigation Bar (Positioned BEFORE Image) -->
-          <div class="lightbox-breadcrumb-header" style="padding: 16px 20px 12px 20px; font-size: 0.8rem; width: 100%; box-sizing: border-box; border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.15); border-radius: var(--radius-lg) var(--radius-lg) 0 0;">
+          <div class="lightbox-breadcrumb-header" style="padding: 12px 16px; font-size: 0.8rem; width: 100%; max-width: 100%; box-sizing: border-box; border-bottom: 1px solid var(--border-color); background: var(--bg-secondary); border-radius: var(--radius-lg) var(--radius-lg) 0 0; overflow: hidden;">
             ${(() => {
               const referrer = sessionStorage.getItem('lightbox_referrer') || sessionStorage.getItem('pin_restore_referrer') || '';
               const isFromProfile = referrer.includes('/profile') || (currentUser && currentUser.uid === img.user_id);
@@ -62,26 +62,26 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
             })()}
           </div>
 
-          <div class="lightbox-content-wrapper" style="position: relative; background: rgba(255,255,255,0.02); min-height: 200px; display: flex; align-items: center; justify-content: center; border-radius: 0; overflow: hidden;">
+          <div class="lightbox-content-wrapper" style="position: relative; background: var(--bg-secondary); min-height: 200px; display: flex; align-items: center; justify-content: center; border-radius: 0; overflow: hidden; width: 100%; max-width: 100%; box-sizing: border-box;">
             <!-- Skeleton loader that displays while loading -->
             <div class="skeleton lightbox-image-skeleton" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1;"></div>
-            <img class="lightbox-image" src="${imageUrl}" alt="${img.title}" decoding="async" style="opacity: 0; transition: opacity 0.3s ease; z-index: 2;" onload="this.style.opacity='1'; const sk = this.previousElementSibling; if(sk) sk.style.display='none';">
+            <img class="lightbox-image" src="${imageUrl}" alt="${img.title}" decoding="async" style="opacity: 0; transition: opacity 0.3s ease; z-index: 2; max-width: 100%; width: 100%; height: auto; object-fit: contain; box-sizing: border-box;" onload="this.style.opacity='1'; const sk = this.previousElementSibling; if(sk) sk.style.display='none';">
             <button class="btn btn-glass" id="lightbox-fullscreen-exit-btn" style="position: absolute; top: 16px; right: 16px; border-radius: 50%; width: 44px; height: 44px; display: none; align-items: center; justify-content: center; z-index: 500; cursor: pointer; border: 1px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.5); color: #ffffff;" aria-label="Exit Fullscreen">
               <span class="material-icons-outlined" style="font-size: 1.5rem;">fullscreen_exit</span>
             </button>
           </div>
           
-          <div class="lightbox-details animate-slide-up" style="background: var(--bg-secondary); border-radius: 0 0 var(--radius-lg) var(--radius-lg); border-left: none; padding: 28px; box-shadow: var(--shadow-md); display: flex; flex-direction: column; justify-content: space-between; overflow-y: auto;">
+          <div class="lightbox-details animate-slide-up" style="background: var(--bg-secondary); border-radius: 0 0 var(--radius-lg) var(--radius-lg); border-left: none; padding: 24px 18px; box-shadow: var(--shadow-md); display: flex; flex-direction: column; justify-content: space-between; overflow-y: auto; width: 100%; max-width: 100%; box-sizing: border-box;">
             <div>
               <!-- Static Details Section -->
-              <div id="lightbox-static-details">
+              <div id="lightbox-static-details" style="width: 100%; max-width: 100%; box-sizing: border-box;">
                 <!-- Title Container: 100% full width below image -->
-                <div id="lightbox-title-container" style="width: 100%; margin-bottom: 16px;">
-                  <h2 class="lightbox-title mobile-truncate" id="lightbox-title-display" style="width: 100%; color: var(--text-primary); font-family: var(--font-heading); font-size: 1.35rem; font-weight: 700; margin: 0 0 12px 0; word-break: break-word; line-height: 1.35; display: block;">${img.title}</h2>
+                <div id="lightbox-title-container" style="width: 100%; max-width: 100%; box-sizing: border-box; margin-bottom: 16px; overflow: hidden;">
+                  <h2 class="lightbox-title mobile-truncate" id="lightbox-title-display" style="width: 100%; max-width: 100%; box-sizing: border-box; color: var(--text-primary); font-family: var(--font-heading); font-size: 1.3rem; font-weight: 700; margin: 0 0 12px 0; word-break: break-word; line-height: 1.35; display: block;">${img.title}</h2>
                   
                   <!-- Actions & Expand Button Row (Below Title) -->
-                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; flex-wrap: wrap;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; max-width: 100%; box-sizing: border-box; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
                       <!-- Like Button (Always visible) -->
                       <button class="btn ${isLiked ? 'btn-primary liked' : 'btn-secondary'} btn-icon btn-like" data-id="${img.id}" style="border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s ease;" aria-label="Like image" title="${isLiked ? 'Unlike' : 'Like'}">
                         <span class="material-icons-outlined" style="${isLiked ? 'color: #ffffff;' : 'color: var(--text-secondary);'} font-size: 1.25rem;">${isLiked ? 'favorite' : 'favorite_border'}</span>
@@ -96,7 +96,7 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
                     </div>
 
                     <!-- Expand / Collapse Button -->
-                    <button id="title-expand-btn" class="btn btn-glass btn-sm" style="padding: 6px 14px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px; border-radius: var(--radius-full); cursor: pointer; border: 1px solid var(--border-color); color: var(--text-secondary); background: var(--bg-primary);">
+                    <button id="title-expand-btn" class="btn btn-glass btn-sm" style="padding: 6px 14px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px; border-radius: var(--radius-full); cursor: pointer; border: 1px solid var(--border-color); color: var(--text-secondary); background: var(--bg-primary); flex-shrink: 0;">
                       <span id="title-expand-label" style="font-weight: 600;">More info</span>
                       <span class="material-icons-outlined" id="title-expand-icon" style="font-size: 1.2rem;">expand_more</span>
                     </button>
