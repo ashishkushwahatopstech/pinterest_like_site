@@ -5,6 +5,7 @@ import { renameBoardFolder, deleteFromDrive } from '../services/drive';
 import { getGoogleDriveToken } from '../services/api';
 import { getOptimizedImageUrl } from '../utils/image';
 import { requestPremiumFeature } from '../services/premium';
+import { canUserAccessRecord, isLinkAccessAllowed, formatDescriptionWithPrivacy } from '../utils/privacy';
 
 export const BoardView = {
   containerId: 'view-container',
@@ -46,10 +47,10 @@ export const BoardView = {
     if (!this.board) {
       container.innerHTML = `
         <div class="container text-center" style="padding: 80px 24px; text-align: center;">
-          <span class="material-icons-outlined" style="font-size: 4rem; color: var(--text-muted); margin-bottom: 16px;">lock</span>
-          <h2 style="font-size: 1.5rem; margin-bottom: 8px;">Board is private or does not exist</h2>
-          <p style="color: var(--text-secondary); margin-bottom: 24px;">You do not have permission to view this board.</p>
-          <a href="/" class="btn btn-primary">Go Home</a>
+          <span class="material-icons-outlined" style="font-size: 4rem; color: #ef4444; margin-bottom: 16px;">lock</span>
+          <h2 style="font-size: 1.5rem; margin-bottom: 8px;">Collection is Private or Unauthorized</h2>
+          <p style="color: var(--text-secondary); max-width: 460px; margin: 0 auto 24px auto;">This collection is private and accessible only by its creator.</p>
+          <a href="/" class="btn btn-primary">Go to Home Gallery</a>
         </div>
       `;
       return;
@@ -66,24 +67,25 @@ export const BoardView = {
   fetchBoardDetails: async function(boardId) {
     try {
       const user = window.appState?.currentUser;
-      const uid = user ? user.uid : null;
+      const isAdmin = window.appState?.isAdmin;
+      const supabase = user ? await getSupabase() : supabasePublic;
       
-      // Attempt to query board details. Supabase RLS will restrict it.
-      let query;
-      if (uid) {
-        const supabase = await getSupabase();
-        query = supabase.from('boards').select('*, users(*)').eq('id', boardId);
-      } else {
-        query = supabasePublic.from('boards').select('*, users(*)').eq('id', boardId).eq('is_public', true);
-      }
-
-      const { data, error } = await query;
+      const { data, error } = await supabase.from('boards').select('*, users(*)').eq('id', boardId);
       if (error || !data || data.length === 0) {
-        return; // Left as null (meaning not found or unauthorized)
+        this.board = null;
+        return;
       }
 
-      this.board = data[0];
-      this.isOwner = uid && this.board.user_id === uid;
+      const boardObj = data[0];
+
+      // Enforce Privacy & Access Permission
+      if (!canUserAccessRecord(boardObj, user, isAdmin)) {
+        this.board = null;
+        return;
+      }
+
+      this.board = boardObj;
+      this.isOwner = user && user.uid === this.board.user_id;
     } catch (err) {
       console.error("Error fetching board details:", err);
     }
@@ -92,19 +94,20 @@ export const BoardView = {
   fetchBoardImages: async function(boardId) {
     try {
       const user = window.appState?.currentUser;
-      const uid = user ? user.uid : null;
+      const isAdmin = window.appState?.isAdmin;
+      const supabase = user ? await getSupabase() : supabasePublic;
 
-      let query;
-      if (uid) {
-        const supabase = await getSupabase();
-        query = supabase.from('images').select('*, users!images_user_id_fkey(*), boards(*)').eq('board_id', boardId).order('created_at', { ascending: false });
-      } else {
-        query = supabasePublic.from('images').select('*, users!images_user_id_fkey(*), boards(*)').eq('board_id', boardId).eq('is_public', true).order('created_at', { ascending: false });
-      }
+      const { data, error } = await supabase
+        .from('images')
+        .select('*, users!images_user_id_fkey(*), boards(*)')
+        .eq('board_id', boardId)
+        .order('created_at', { ascending: false });
 
-      const { data, error } = await query;
       if (error) throw error;
-      this.images = data || [];
+
+      // Filter images based on access permissions
+      const allImages = data || [];
+      this.images = allImages.filter(img => canUserAccessRecord(img, user, isAdmin));
     } catch (err) {
       console.error("Error fetching board images:", err);
     } finally {
@@ -188,11 +191,22 @@ export const BoardView = {
 
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
                 <div>
-                  <div style="font-weight: 600; font-size: 0.95rem;">Visibility settings</div>
-                  <div style="font-size: 0.8rem; color: var(--text-secondary);">Public boards show up in search and exploration.</div>
+                  <div style="font-weight: 600; font-size: 0.95rem;">Public Gallery Visibility</div>
+                  <div style="font-size: 0.8rem; color: var(--text-secondary);">Public boards show up on the Home explore feed and search.</div>
                 </div>
                 <label class="switch">
                   <input type="checkbox" id="board-toggle-public" ${isPublic ? 'checked' : ''}>
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div id="link-access-container" style="display: ${isPublic ? 'none' : 'flex'}; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <div>
+                  <div style="font-weight: 600; font-size: 0.95rem;">Allow Direct Link Access (Unlisted)</div>
+                  <div style="font-size: 0.8rem; color: var(--text-secondary);">When ON, anyone with the direct URL link can view. When OFF, ONLY you (creator) can view.</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="board-toggle-link-access" ${isLinkAccessAllowed(this.board) ? 'checked' : ''}>
                   <span class="slider"></span>
                 </label>
               </div>
@@ -507,16 +521,24 @@ export const BoardView = {
 
     // Visibility Toggle (Public / Private)
     const togglePublic = document.getElementById('board-toggle-public');
+    const toggleLinkAccess = document.getElementById('board-toggle-link-access');
+    const linkAccessContainer = document.getElementById('link-access-container');
+
     if (togglePublic) {
       togglePublic.onchange = async () => {
         const isPublic = togglePublic.checked;
+        if (linkAccessContainer) {
+          linkAccessContainer.style.display = isPublic ? 'none' : 'flex';
+        }
+        const allowLinkAccess = toggleLinkAccess ? toggleLinkAccess.checked : false;
+        const newDesc = formatDescriptionWithPrivacy(this.board.description, allowLinkAccess);
+
         try {
           const supabase = await getSupabase();
           
-          // Start a transaction-like batch to update board and all its images
           const { error: boardErr } = await supabase
             .from('boards')
-            .update({ is_public: isPublic })
+            .update({ is_public: isPublic, description: newDesc })
             .eq('id', this.board.id);
           
           if (boardErr) throw boardErr;
@@ -528,12 +550,37 @@ export const BoardView = {
             
           if (imgErr) throw imgErr;
 
-          alert(`Board visibility changed to ${isPublic ? 'Public' : 'Private'}.`);
           this.board.is_public = isPublic;
+          this.board.description = newDesc;
+
+          alert(`Collection visibility changed to ${isPublic ? 'Public' : (allowLinkAccess ? 'Private (Unlisted via link)' : 'Strictly Private (Owner only)')}.`);
           this.renderContent();
         } catch (err) {
           alert("Failed to update visibility: " + err.message);
           togglePublic.checked = !isPublic; // Revert
+        }
+      };
+    }
+
+    if (toggleLinkAccess) {
+      toggleLinkAccess.onchange = async () => {
+        const allowLinkAccess = toggleLinkAccess.checked;
+        const newDesc = formatDescriptionWithPrivacy(this.board.description, allowLinkAccess);
+
+        try {
+          const supabase = await getSupabase();
+          const { error } = await supabase
+            .from('boards')
+            .update({ description: newDesc })
+            .eq('id', this.board.id);
+
+          if (error) throw error;
+          this.board.description = newDesc;
+
+          alert(`Link Access updated: ${allowLinkAccess ? 'Anyone with the direct link can view this collection.' : 'Strictly Private - Only you (creator) can access this collection.'}`);
+        } catch (err) {
+          alert("Failed to update link access: " + err.message);
+          toggleLinkAccess.checked = !allowLinkAccess;
         }
       };
     }

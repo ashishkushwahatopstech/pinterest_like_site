@@ -3,6 +3,7 @@ import { renderBoardSkeleton, renderProfileSkeleton } from '../components/Skelet
 import { getAppStorageUsage } from '../services/drive';
 import { getGoogleDriveToken } from '../services/api';
 import { getOptimizedImageUrl } from '../utils/image';
+import { canUserAccessRecord } from '../utils/privacy';
 
 export const ProfileView = {
   containerId: 'view-container',
@@ -68,15 +69,19 @@ export const ProfileView = {
 
   fetchUserLikes: async function() {
     try {
+      const user = window.appState.currentUser;
+      const isAdmin = window.appState.isAdmin;
       const supabase = await getSupabase();
       const { data, error } = await supabase
         .from('likes')
         .select('*, images(*, users!images_user_id_fkey(*), boards(*))')
-        .eq('user_id', window.appState.currentUser.uid)
+        .eq('user_id', user.uid)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      this.likes = data || [];
+      const rawLikes = data || [];
+      // Filter out any liked image that became strictly private or unauthorized
+      this.likes = rawLikes.filter(l => l.images && canUserAccessRecord(l.images, user, isAdmin) && canUserAccessRecord(l.images.boards, user, isAdmin));
     } catch (err) {
       console.error("Error fetching user liked images:", err);
     } finally {

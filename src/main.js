@@ -48,6 +48,7 @@ import { getSupabase, supabasePublic, isUserAdmin } from './services/supabase';
 import { getGoogleDriveToken, connectGoogleDrive } from './services/api';
 import { getRootFolder, getOrCreateBoardFolder, uploadFileToDrive, makeFilePublic, deleteFromDrive } from './services/drive';
 import { trackUserSearch, trackUserView, trackUserLike, getRelatedRecommendations } from './services/recommendations';
+import { canUserAccessRecord } from './utils/privacy';
 
 // Views
 import { HomeView } from './views/HomeView';
@@ -427,13 +428,33 @@ const openLightboxOverlay = async (imageId) => {
   if (!wrapper) return;
 
   try {
-    const { data, error } = await supabasePublic
+    const user = window.appState?.currentUser;
+    const isAdmin = window.appState?.isAdmin;
+    const supabase = user ? await getSupabase() : supabasePublic;
+
+    const { data, error } = await supabase
       .from('images')
       .select('*, users!images_user_id_fkey(*), boards(*)')
       .eq('id', imageId)
       .single();
 
     if (error || !data) return;
+
+    // Enforce Privacy & Link Access Permission for Image and parent Board
+    if (!canUserAccessRecord(data, user, isAdmin) || !canUserAccessRecord(data.boards, user, isAdmin)) {
+      wrapper.innerHTML = `
+        <div class="lightbox show" id="lightbox-modal" style="display: flex; align-items: center; justify-content: center;">
+          <button class="lightbox-close-btn" id="lightbox-close-btn" onclick="document.getElementById('lightbox-modal').remove()"><span class="material-icons-outlined">close</span></button>
+          <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 40px; border-radius: var(--radius-lg); text-align: center; max-width: 480px; box-shadow: var(--shadow-lg);">
+            <span class="material-icons-outlined" style="font-size: 3.5rem; color: #ef4444; margin-bottom: 16px;">lock</span>
+            <h2 style="font-size: 1.4rem; color: var(--text-primary); margin-bottom: 8px;">Strictly Private Image</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 24px;">This pin belongs to a private collection and is accessible only by its creator.</p>
+            <button onclick="document.getElementById('lightbox-modal').remove(); window.appState.navigate('/')" class="btn btn-primary">Go to Home Gallery</button>
+          </div>
+        </div>
+      `;
+      return;
+    }
 
     // Track view interest
     trackUserView(data);

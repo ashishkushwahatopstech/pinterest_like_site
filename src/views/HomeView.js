@@ -208,12 +208,12 @@ export const HomeView = {
     }
 
     try {
-      const user = window.appState?.currentUser;
-      const supabase = user ? await getSupabase() : supabasePublic;
-
-      let query = supabase
+      // Home feed is for PUBLIC discovery only. Always query public images belonging to public boards.
+      let query = supabasePublic
         .from('images')
-        .select('*, users!images_user_id_fkey(*), boards(*)')
+        .select('*, users!images_user_id_fkey(*), boards!inner(*)')
+        .eq('is_public', true)
+        .eq('boards.is_public', true)
         .order('created_at', { ascending: false });
 
       // Apply Board filter
@@ -246,7 +246,9 @@ export const HomeView = {
       if (currentFetchId !== this.activeFetchId) return;
 
       if (data) {
-        let fetchedData = data || [];
+        // Double-verify privacy to ensure no private item ever slips through
+        let fetchedData = (data || []).filter(img => img.is_public === true && img.boards?.is_public === true);
+
         // Apply Shape/Orientation filter client-side by pre-resolving aspects
         if (this.selectedShapeFilter && this.selectedShapeFilter !== 'all') {
           fetchedData = await this.filterImagesByShape(fetchedData, this.selectedShapeFilter);
