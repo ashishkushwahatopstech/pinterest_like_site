@@ -51,7 +51,7 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
             <div>
               <!-- Static Details Section -->
               <div id="lightbox-static-details">
-                <div id="lightbox-title-container" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; width: 100%;">
+                <div id="lightbox-title-container" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; width: 100%;">
                   <h2 class="lightbox-title mobile-truncate" id="lightbox-title-display" style="color: var(--text-primary); font-family: var(--font-heading); font-size: 1.25rem; font-weight: 700; margin: 0; word-break: break-word; line-height: 1.3;">${img.title}</h2>
                   <div style="display: flex; align-items: center; gap: 12px;">
                     <!-- Like Button (Always visible) -->
@@ -68,6 +68,21 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
                     <span class="material-icons-outlined" id="title-expand-icon" style="font-size: 1.8rem; display: none; cursor: pointer; user-select: none;">expand_more</span>
                   </div>
                 </div>
+
+                <!-- Always Visible Image Stats Badge Row (Views & Likes System) -->
+                <div class="lightbox-stats-row" style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px; padding: 10px 14px; background: var(--bg-primary); border-radius: var(--radius-md); border: 1px solid var(--border-color); font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); width: 100%;">
+                  <span style="display: inline-flex; align-items: center; gap: 6px;" title="Views System">
+                    <span class="material-icons-outlined" style="font-size: 1.1rem; color: var(--text-muted);">visibility</span>
+                    <span id="lightbox-views-count" class="views-count-label" style="font-weight: 700; color: var(--text-primary);">${viewsCount}</span>
+                    <span style="font-weight: 500; font-size: 0.8rem;">views</span>
+                  </span>
+                  <span style="color: var(--border-color);">|</span>
+                  <span style="display: inline-flex; align-items: center; gap: 6px;" title="Likes">
+                    <span class="material-icons-outlined" style="font-size: 1.1rem; color: var(--accent-primary);">favorite</span>
+                    <span id="lightbox-likes-count" class="likes-count-label" style="font-weight: 700; color: var(--text-primary);">${likesCount}</span>
+                    <span style="font-weight: 500; font-size: 0.8rem;">likes</span>
+                  </span>
+                </div>
                 
                 <!-- Collapsible drawer on mobile -->
                 <div id="lightbox-collapsible-drawer">
@@ -81,18 +96,6 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
                       <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">${img.users?.display_name || 'Anonymous'}</div>
                       <div style="font-size: 0.75rem; color: var(--text-secondary);">Uploaded ${new Date(img.created_at).toLocaleDateString()}</div>
                     </div>
-                  </div>
-
-                  <!-- Image Stats Badge Row (Views & Likes System) -->
-                  <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px; padding: 8px 12px; background: var(--bg-primary); border-radius: var(--radius-md); border: 1px solid var(--border-color); font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">
-                    <span style="display: inline-flex; align-items: center; gap: 6px;" title="Views System">
-                      <span class="material-icons-outlined" style="font-size: 1.1rem; color: var(--text-muted);">visibility</span>
-                      <span id="lightbox-views-count" class="views-count-label" style="font-weight: 700; color: var(--text-primary);">${viewsCount}</span> views
-                    </span>
-                    <span style="display: inline-flex; align-items: center; gap: 6px;" title="Likes">
-                      <span class="material-icons-outlined" style="font-size: 1.1rem; color: var(--accent-primary);">favorite</span>
-                      <span id="lightbox-likes-count" class="likes-count-label" style="font-weight: 700; color: var(--text-primary);">${likesCount}</span> likes
-                    </span>
                   </div>
 
                   <p class="lightbox-desc" id="lightbox-desc-display" style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 20px; font-size: 0.9rem; word-break: break-word;">${cleanDescText || 'No description provided.'}</p>
