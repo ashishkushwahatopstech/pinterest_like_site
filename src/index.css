@@ -708,6 +708,12 @@ body::before {
   padding: 88px 24px 40px 24px;
 }
 
+@media (max-width: 767px) {
+  .lightbox {
+    padding: 68px 10px 24px 10px !important;
+  }
+}
+
 .lightbox.show {
   display: block;
 }
@@ -772,6 +778,12 @@ body::before {
   flex-direction: column;
   justify-content: space-between;
   background: var(--bg-secondary);
+}
+
+@media (max-width: 767px) {
+  .lightbox-details {
+    padding: 18px 14px !important;
+  }
 }
 
 @media (min-width: 768px) {

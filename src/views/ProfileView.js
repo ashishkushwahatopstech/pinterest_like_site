@@ -177,65 +177,74 @@ export const ProfileView = {
     ]);
 
     container.innerHTML = `
-      <div class="container animate-fade" style="padding-top: 24px;">
+      <div class="container animate-fade" style="padding-top: 20px; max-width: 1000px; box-sizing: border-box;">
         ${breadcrumbHtml}
-        <!-- Dynamic Profile Cover Banner -->
-        <div class="profile-cover" style="height: 200px; border-radius: var(--radius-lg); overflow: hidden; position: relative; margin-bottom: -50px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+        
+        <!-- Dynamic Responsive Profile Cover Banner -->
+        <div class="profile-cover-banner" style="height: 160px; border-radius: var(--radius-lg); overflow: hidden; position: relative; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
           <img src="${coverUrl}" style="width: 100%; height: 100%; object-fit: cover; filter: blur(2px) brightness(0.65);" alt="Profile Cover" loading="lazy" decoding="async">
-          <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(15,23,42,0.4));"></div>
+          <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(15,23,42,0.5));"></div>
         </div>
 
-        <!-- Profile info -->
-        <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; margin-bottom: 32px; position: relative; z-index: 10;">
-          <div class="profile-avatar" style="border: 4px solid var(--bg-secondary); box-shadow: var(--shadow-md);">
-            <img src="${avatar}" alt="Avatar">
+        <!-- Profile Info Wrapper -->
+        <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; margin-bottom: 28px; position: relative; z-index: 10; margin-top: -45px; padding: 0 12px; box-sizing: border-box;">
+          <div class="profile-avatar-wrapper" style="width: 90px; height: 90px; border-radius: 50%; border: 4px solid var(--bg-secondary); box-shadow: var(--shadow-md); overflow: hidden; background: var(--bg-tertiary); flex-shrink: 0;">
+            <img src="${avatar}" alt="${channelName}" style="width: 100%; height: 100%; object-fit: cover;">
           </div>
-          <div>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;">
-              <h1 style="font-size: 2rem; font-family: var(--font-heading); margin: 0;">${channelName}</h1>
+          
+          <div style="width: 100%; max-width: 600px; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
+              <h1 style="font-size: 1.5rem; font-family: var(--font-heading); font-weight: 800; margin: 0; word-break: break-word;">${channelName}</h1>
               ${username ? `
-                <span class="btn-glass" style="padding: 4px 10px; font-size: 0.8rem; border-radius: var(--radius-full); font-weight: 700; color: var(--accent-primary); border: 1px solid var(--border-color);">
+                <span class="btn-glass" style="padding: 3px 10px; font-size: 0.75rem; border-radius: var(--radius-full); font-weight: 700; color: var(--accent-primary); border: 1px solid rgba(255, 51, 102, 0.3); background: rgba(255, 51, 102, 0.1);">
                   ${username}
                 </span>
               ` : ''}
             </div>
 
             ${bio ? `
-              <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 8px; max-width: 520px; line-height: 1.5; margin-left: auto; margin-right: auto;">${bio}</p>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 6px 0 0 0; max-width: 500px; line-height: 1.5; word-break: break-word; margin-left: auto; margin-right: auto;">${bio}</p>
             ` : ''}
           </div>
           
-          <div style="display: flex; gap: 24px; margin-top: 8px; flex-wrap: wrap; justify-content: center;">
-            <div class="profile-stat-item">
-              <span class="profile-stat-count">${this.boards.length}</span>
-              <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Collections</span>
+          <!-- Responsive Stats Pill Capsule -->
+          <div class="profile-stats-card glass" style="display: flex; align-items: center; justify-content: space-evenly; gap: 12px; padding: 10px 16px; border-radius: var(--radius-full); border: 1px solid var(--border-color); width: 100%; max-width: 440px; box-shadow: var(--shadow-sm); box-sizing: border-box;">
+            <div class="profile-stat-item" style="text-align: center; flex: 1;">
+              <span class="profile-stat-count" style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); display: block;">${this.boards.length}</span>
+              <span style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Collections</span>
             </div>
-            <div class="profile-stat-item">
-              <span class="profile-stat-count">${this.likes.length}</span>
-              <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Likes</span>
+            <div style="width: 1px; height: 24px; background: var(--border-color);"></div>
+            <div class="profile-stat-item" style="text-align: center; flex: 1;">
+              <span class="profile-stat-count" style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); display: block;">${this.likes.length}</span>
+              <span style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Likes</span>
             </div>
             ${this.isSelf && this.storageUsed !== null ? `
-              <div class="profile-stat-item">
-                <span class="profile-stat-count">${this.formatBytes(this.storageUsed)}</span>
-                <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Drive Space</span>
+              <div style="width: 1px; height: 24px; background: var(--border-color);"></div>
+              <div class="profile-stat-item" style="text-align: center; flex: 1;">
+                <span class="profile-stat-count" style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); display: block;">${this.formatBytes(this.storageUsed)}</span>
+                <span style="font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Drive Space</span>
               </div>
             ` : ''}
           </div>
 
           ${this.isSelf ? `
-            <div style="margin-top: 8px;">
-              <button onclick="window.appState.navigate('/settings?tab=channel')" class="btn btn-secondary btn-sm" style="padding: 8px 16px; font-size: 0.85rem; font-weight: 600; border-radius: var(--radius-full); display: inline-flex; align-items: center; gap: 6px;">
-                <span class="material-icons-outlined" style="font-size: 1rem;">tune</span>
+            <div style="margin-top: 4px;">
+              <button onclick="window.appState.navigate('/settings?tab=channel')" class="btn btn-secondary btn-sm" style="padding: 8px 18px; font-size: 0.8rem; font-weight: 700; border-radius: var(--radius-full); display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary);">
+                <span class="material-icons-outlined" style="font-size: 1rem; color: var(--accent-primary);">tune</span>
                 <span>Edit Creator Channel</span>
               </button>
             </div>
           ` : ''}
         </div>
 
-        <!-- Navigation Tabs -->
-        <div class="tabs-container">
-          <button class="tab-btn ${this.activeTab === 'boards' ? 'active' : ''}" id="tab-boards-btn">My Boards</button>
-          <button class="tab-btn ${this.activeTab === 'likes' ? 'active' : ''}" id="tab-likes-btn">My Favorites</button>
+        <!-- Responsive Navigation Tabs -->
+        <div class="tabs-container" style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 24px;">
+          <button class="tab-btn ${this.activeTab === 'boards' ? 'active' : ''}" id="tab-boards-btn" style="padding: 10px 18px; font-weight: 700; font-size: 0.9rem;">
+            <span>${this.isSelf ? 'My Collections' : 'Collections'} (${this.boards.length})</span>
+          </button>
+          <button class="tab-btn ${this.activeTab === 'likes' ? 'active' : ''}" id="tab-likes-btn" style="padding: 10px 18px; font-weight: 700; font-size: 0.9rem;">
+            <span>${this.isSelf ? 'My Favorites' : 'Favorites'} (${this.likes.length})</span>
+          </button>
         </div>
 
         <!-- Tab Contents -->
