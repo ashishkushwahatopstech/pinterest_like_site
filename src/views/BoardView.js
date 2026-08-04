@@ -139,11 +139,16 @@ export const BoardView = {
       ? (this.images[0].drive_view_link || `https://lh3.googleusercontent.com/d/${this.images[0].drive_file_id}`)
       : 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1200&q=80';
     const coverUrl = getOptimizedImageUrl(rawCover, 800);
-    const breadcrumbHtml = renderBreadcrumb([
-      { label: 'Home', url: '/', icon: 'home' },
-      { label: 'Collections', url: '/' },
-      { label: boardName, icon: 'folder' }
-    ]);
+
+    const breadcrumbItems = [{ label: 'Home', url: '/', icon: 'home' }];
+    if (this.isOwner) {
+      breadcrumbItems.push({ label: 'My Profile', url: '/profile', icon: 'person' });
+    } else {
+      breadcrumbItems.push({ label: 'Collections', url: '/', icon: 'grid_view' });
+    }
+    breadcrumbItems.push({ label: boardName, icon: 'folder' });
+
+    const breadcrumbHtml = renderBreadcrumb(breadcrumbItems);
 
     container.innerHTML = `
       <div class="container animate-fade" style="padding-top: 24px;">

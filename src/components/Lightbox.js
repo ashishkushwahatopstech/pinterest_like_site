@@ -76,11 +76,21 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
 
                 <!-- Detail Breadcrumb Navigation Bar -->
                 <div style="margin-bottom: 12px; font-size: 0.8rem;">
-                  ${renderBreadcrumb([
-                    { label: 'Home', url: '/', icon: 'home' },
-                    ...(img.boards ? [{ label: img.boards.name, url: window.appState?.getBoardUrl ? window.appState.getBoardUrl(img.boards) : '/', icon: 'folder' }] : []),
-                    { label: img.title }
-                  ])}
+                  ${(() => {
+                    const referrer = sessionStorage.getItem('lightbox_referrer') || sessionStorage.getItem('pin_restore_referrer') || '';
+                    const isFromProfile = referrer.includes('/profile') || (currentUser && currentUser.uid === img.user_id);
+                    
+                    const items = [{ label: 'Home', url: '/', icon: 'home' }];
+                    if (isFromProfile) {
+                      items.push({ label: 'My Profile', url: '/profile', icon: 'person' });
+                    }
+                    if (img.boards) {
+                      const bUrl = window.appState?.getBoardUrl ? window.appState.getBoardUrl(img.boards) : '/';
+                      items.push({ label: img.boards.name, url: bUrl, icon: 'folder' });
+                    }
+                    items.push({ label: img.title });
+                    return renderBreadcrumb(items);
+                  })()}
                 </div>
 
                 <!-- Always Visible Image Stats Badge Row (Views & Likes System) -->
