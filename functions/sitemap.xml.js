@@ -25,10 +25,24 @@ export async function onRequest(context) {
     return new Response(null, { status: 200, headers });
   }
 
-  // Complete XML character escape helper (fixes xmlParseEntityRef: no name error on & < > ' ")
+  // Strict plain text sanitizer (strips HTML, control chars, system tags, and normalizes whitespace)
+  const cleanText = (str) => {
+    if (!str) return '';
+    return String(str)
+      .replace(/<[^>]*>/g, '') // Strip any HTML tags
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove invalid XML 1.0 control characters
+      .replace(/\[link:\s*https?:\/\/[^\s\]]+\]/gi, '')
+      .replace(/\[allow_link_access\]/gi, '')
+      .replace(/\[unlisted\]/gi, '')
+      .replace(/\s+/g, ' ') // Collapse newlines, tabs, and multi-spaces into single space
+      .trim();
+  };
+
+  // XML character escape helper for valid XML 1.0 schema
   const escapeXml = (str) => {
     if (!str) return '';
-    return String(str).replace(/[<>&'"]/g, (c) => {
+    const text = cleanText(str);
+    return text.replace(/[<>&'"]/g, (c) => {
       switch (c) {
         case '<': return '&lt;';
         case '>': return '&gt;';
@@ -38,16 +52,6 @@ export async function onRequest(context) {
         default: return c;
       }
     });
-  };
-
-  // Clean description text helper (strips internal system tags)
-  const cleanDescriptionText = (desc) => {
-    if (!desc) return '';
-    return desc
-      .replace(/\[link:\s*https?:\/\/[^\s\]]+\]/gi, '')
-      .replace(/\[allow_link_access\]/gi, '')
-      .replace(/\[unlisted\]/gi, '')
-      .trim();
   };
 
   const slugify = (text) => {
@@ -193,7 +197,7 @@ export async function onRequest(context) {
     const pinUrl = `${baseUrl}/pin/${slugify(img.title)}--${pinShortId}`;
     const rawUrl = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
     const titleText = img.title || 'Discovery Image';
-    const rawDesc = cleanDescriptionText(img.description);
+    const rawDesc = cleanText(img.description);
     const descText = rawDesc || `PinGrid creative discovery item - ${titleText}`;
 
     xml += `  <url>\n`;
