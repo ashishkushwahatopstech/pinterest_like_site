@@ -48,7 +48,7 @@ import { getSupabase, supabasePublic, isUserAdmin } from './services/supabase';
 import { getGoogleDriveToken, connectGoogleDrive } from './services/api';
 import { getRootFolder, getOrCreateBoardFolder, uploadFileToDrive, makeFilePublic, deleteFromDrive } from './services/drive';
 import { trackUserSearch, trackUserView, trackUserLike, getRelatedRecommendations } from './services/recommendations';
-import { canUserAccessRecord } from './utils/privacy';
+import { canUserAccessRecord, formatDescriptionWithLink } from './utils/privacy';
 
 // Views
 import { HomeView } from './views/HomeView';
@@ -145,7 +145,7 @@ window.appState = {
 
       showUploadModal(
         boards,
-        async (boardId, file, title, description, progressCallback) => {
+        async (boardId, file, title, description, linkUrl, progressCallback) => {
           const supabase = await getSupabase(); // Get fresh authenticated client
           const accessToken = await getGoogleDriveToken();
           const isBackupEnabled = localStorage.getItem('backup_storage_enabled') === 'true';
@@ -157,6 +157,8 @@ window.appState = {
           // Find active board
           const activeBoard = boards.find(b => b.id === boardId);
           if (!activeBoard) throw new Error("Board not found.");
+
+          const finalDescription = formatDescriptionWithLink(description, linkUrl, false);
 
           let driveFileId = 'supabase_only';
           let driveViewLink = '';
@@ -185,7 +187,7 @@ window.appState = {
 
             if (driveFolderId !== 'supabase_only') {
               // 1. Upload to Google Drive
-              const driveFile = await uploadFileToDrive(accessToken, driveFolderId, file, title, description, progressCallback);
+              const driveFile = await uploadFileToDrive(accessToken, driveFolderId, file, title, finalDescription, progressCallback);
               
               // 2. Set file permissions on Google Drive to public read
               await makeFilePublic(accessToken, driveFile.id);
@@ -239,7 +241,7 @@ window.appState = {
               user_id: window.appState.currentUser.uid,
               board_id: boardId,
               title,
-              description,
+              description: finalDescription,
               drive_file_id: driveFileId,
               drive_view_link: driveViewLink,
               drive_download_link: driveDownloadLink,

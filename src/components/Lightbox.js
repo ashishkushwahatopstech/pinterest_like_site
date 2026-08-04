@@ -3,6 +3,7 @@ import { getGoogleDriveToken } from '../services/api';
 import { getOptimizedImageUrl } from '../utils/image';
 import { requestPremiumFeature } from '../services/premium';
 import { extractColorPalette } from '../utils/colorPalette';
+import { extractDestinationUrl, getDomainFromUrl, getCleanDescription, formatDescriptionWithLink, isLinkAccessAllowed } from '../utils/privacy';
 
 export const renderLightbox = (img, currentUser, isAdmin) => {
   if (!img) return '';
@@ -15,6 +16,9 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
   // Restore user preference for info panel
   const isInfoHidden = localStorage.getItem('lightbox_info_hidden') === 'true';
 
+  const destUrl = extractDestinationUrl(img.description);
+  const cleanDescText = getCleanDescription(img.description);
+
   return `
     <div class="lightbox show ${isInfoHidden ? 'hide-info' : ''}" id="lightbox-modal">
       <!-- Fixed Controls Toolbar -->
@@ -23,7 +27,7 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
       </button>
       
       <button class="lightbox-close-btn" id="lightbox-info-toggle-btn" style="right: 88px; position: fixed; z-index: 310;" aria-label="Toggle Fullscreen">
-        <span class="material-icons-outlined" id="info-toggle-icon" style="font-size: 1.8rem; color: var(--text-primary);">${isInfoHidden ? 'fullscreen_exit' : 'fullscreen'}</span>
+        <span class="material-icons-outlined" id="info-toggle-icon" style="font-size: 1.8rem; color: var(--text-primary);">fullscreen</span>
       </button>
       
       <!-- Scrollable Container -->
@@ -66,14 +70,29 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
                 <div id="lightbox-collapsible-drawer">
                   <!-- User Profile Details Card (Inside the toggle) -->
                   <div class="lightbox-user" style="display: flex; align-items: center; gap: 12px; margin-top: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
-                    <img src="${img.users?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" alt="Avatar" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color);">
+                    <div style="position: relative; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: var(--bg-tertiary); flex-shrink: 0; border: 1px solid var(--border-color);">
+                      <div class="skeleton" style="position: absolute; inset: 0; z-index: 1;"></div>
+                      <img src="${img.users?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s ease; position: relative; z-index: 2;" onload="this.style.opacity='1'; const sk=this.previousElementSibling; if(sk) sk.style.display='none';" onerror="const sk=this.previousElementSibling; if(sk) sk.style.display='none';">
+                    </div>
                     <div>
                       <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">${img.users?.display_name || 'Anonymous'}</div>
                       <div style="font-size: 0.75rem; color: var(--text-secondary);">Uploaded ${new Date(img.created_at).toLocaleDateString()}</div>
                     </div>
                   </div>
 
-                  <p class="lightbox-desc" id="lightbox-desc-display" style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px; font-size: 0.9rem; word-break: break-word;">${img.description || 'No description provided.'}</p>
+                  <p class="lightbox-desc" id="lightbox-desc-display" style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 20px; font-size: 0.9rem; word-break: break-word;">${cleanDescText || 'No description provided.'}</p>
+                  
+                  <!-- Promotional Destination Website Link (Visit Button) -->
+                  <div id="lightbox-visit-card" style="display: ${destUrl ? 'flex' : 'none'}; margin-bottom: 24px; padding: 14px; border-radius: var(--radius-md); background: var(--bg-primary); border: 1px solid var(--border-color); align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                    <div>
+                      <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Destination Link</div>
+                      <div id="lightbox-visit-domain" style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary); margin-top: 2px;">${getDomainFromUrl(destUrl)}</div>
+                    </div>
+                    <a id="lightbox-visit-link" href="${destUrl || '#'}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: var(--radius-full); text-decoration: none; font-size: 0.85rem; font-weight: 700;">
+                      <span>Visit</span>
+                      <span class="material-icons-outlined" style="font-size: 1rem;">open_in_new</span>
+                    </a>
+                  </div>
                   
                   ${img.boards ? `
                     <div style="margin-bottom: 24px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -154,7 +173,11 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
                 </div>
                 <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
                   <label class="form-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: var(--text-secondary);">Description</label>
-                  <textarea id="edit-img-desc" class="form-control" rows="3" style="resize: vertical; width: 100%; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-family: var(--font-body);">${img.description || ''}</textarea>
+                  <textarea id="edit-img-desc" class="form-control" rows="3" style="resize: vertical; width: 100%; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-family: var(--font-body);">${cleanDescText || ''}</textarea>
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                  <label class="form-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: var(--text-secondary);">Destination / Promotional Link (Optional)</label>
+                  <input type="url" id="edit-img-link" class="form-control" value="${destUrl || ''}" placeholder="e.g. https://yourwebsite.com/product" style="font-weight: 500; width: 100%; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
                 </div>
                 <div style="display: flex; gap: 8px;">
                   <button id="edit-save-btn" class="btn btn-primary" style="flex: 1; padding: 10px; font-size: 0.85rem; font-weight: 600; border-radius: var(--radius-sm); cursor: pointer;">Save Changes</button>
@@ -342,7 +365,9 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
     saveChangesBtn.onclick = async (e) => {
       e.stopPropagation();
       const newTitle = document.getElementById('edit-img-title').value.trim();
-      const newDesc = document.getElementById('edit-img-desc').value.trim();
+      const newRawDesc = document.getElementById('edit-img-desc').value.trim();
+      const newLink = document.getElementById('edit-img-link') ? document.getElementById('edit-img-link').value.trim() : '';
+      const allowLinkAccess = isLinkAccessAllowed(img);
       
       if (!newTitle) {
         alert("Title cannot be empty!");
@@ -353,17 +378,35 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
       saveChangesBtn.textContent = 'Saving...';
 
       try {
-        await callbacks.onSave(img.id, newTitle, newDesc);
+        const finalDescription = formatDescriptionWithLink(newRawDesc, newLink, allowLinkAccess);
+        await callbacks.onSave(img.id, newTitle, finalDescription);
         
         // Update local object values
         img.title = newTitle;
-        img.description = newDesc;
+        img.description = finalDescription;
+
+        const updatedDestUrl = extractDestinationUrl(finalDescription);
+        const updatedCleanDesc = getCleanDescription(finalDescription);
 
         // Update UI Display elements
         const titleDisplay = document.getElementById('lightbox-title-display');
         const descDisplay = document.getElementById('lightbox-desc-display');
+        const visitCard = document.getElementById('lightbox-visit-card');
+        const visitDomain = document.getElementById('lightbox-visit-domain');
+        const visitLink = document.getElementById('lightbox-visit-link');
+
         if (titleDisplay) titleDisplay.textContent = newTitle;
-        if (descDisplay) descDisplay.textContent = newDesc;
+        if (descDisplay) descDisplay.textContent = updatedCleanDesc || 'No description provided.';
+
+        if (visitCard && visitLink && visitDomain) {
+          if (updatedDestUrl) {
+            visitDomain.textContent = getDomainFromUrl(updatedDestUrl);
+            visitLink.href = updatedDestUrl;
+            visitCard.style.display = 'flex';
+          } else {
+            visitCard.style.display = 'none';
+          }
+        }
 
         // Close form
         editForm.style.display = 'none';

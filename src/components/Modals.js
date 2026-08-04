@@ -301,9 +301,12 @@ export const showUploadModal = (boards, onUpload, onTriggerNewBoard) => {
           </button>
         </div>
         
-        <div style="margin-top: 4px; display: flex; gap: 8px; align-items: center;">
-          <input type="text" placeholder="Title (optional)" class="form-control" style="padding: 6px 10px; font-size: 0.8rem; border-radius: var(--radius-sm); background: var(--bg-tertiary);" value="${item.title}" id="title-input-${item.id}">
-          <input type="text" placeholder="Description (optional)" class="form-control" style="padding: 6px 10px; font-size: 0.8rem; border-radius: var(--radius-sm); background: var(--bg-tertiary);" id="desc-input-${item.id}">
+        <div style="margin-top: 4px; display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; gap: 8px;">
+            <input type="text" placeholder="Title (optional)" class="form-control" style="padding: 6px 10px; font-size: 0.8rem; border-radius: var(--radius-sm); background: var(--bg-tertiary); flex: 1;" value="${item.title}" id="title-input-${item.id}">
+            <input type="text" placeholder="Description (optional)" class="form-control" style="padding: 6px 10px; font-size: 0.8rem; border-radius: var(--radius-sm); background: var(--bg-tertiary); flex: 1;" value="${item.description || ''}" id="desc-input-${item.id}">
+          </div>
+          <input type="url" placeholder="Destination link e.g. https://yourwebsite.com (optional)" class="form-control" style="padding: 6px 10px; font-size: 0.8rem; border-radius: var(--radius-sm); background: var(--bg-tertiary);" value="${item.linkUrl || ''}" id="link-input-${item.id}">
         </div>
 
         <div class="progress-bar-container" style="display: none; height: 4px;" id="progress-container-${item.id}">
@@ -325,16 +328,20 @@ export const showUploadModal = (boards, onUpload, onTriggerNewBoard) => {
       };
     });
 
-    // Update title/desc bindings on change
+    // Update title/desc/link bindings on change
     uploadQueue.forEach(item => {
       const titleInput = document.getElementById(`title-input-${item.id}`);
       const descInput = document.getElementById(`desc-input-${item.id}`);
+      const linkInput = document.getElementById(`link-input-${item.id}`);
       
       if (titleInput) {
         titleInput.oninput = () => { item.title = titleInput.value; };
       }
       if (descInput) {
         descInput.oninput = () => { item.description = descInput.value; };
+      }
+      if (linkInput) {
+        linkInput.oninput = () => { item.linkUrl = linkInput.value; };
       }
     });
   };
@@ -370,7 +377,7 @@ export const showUploadModal = (boards, onUpload, onTriggerNewBoard) => {
       }
 
       try {
-        await onUpload(boardId, item.file, item.title, item.description, (percent) => {
+        await onUpload(boardId, item.file, item.title, item.description, item.linkUrl, (percent) => {
           if (progBar && progPercent) {
             progBar.style.width = `${percent}%`;
             progPercent.textContent = `${percent}%`;

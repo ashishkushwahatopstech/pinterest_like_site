@@ -44,20 +44,67 @@ export const canUserAccessRecord = (record, currentUser, isAdmin) => {
 };
 
 /**
- * Strips privacy tags from description for user-facing display.
+ * Strips privacy & link tags from description for user-facing display.
  */
 export const getCleanDescription = (description) => {
   if (!description) return '';
-  return description.replace(/\[allow_link_access\]/gi, '').replace(/\[unlisted\]/gi, '').trim();
+  return description
+    .replace(/\[link:\s*https?:\/\/[^\s\]]+\]/gi, '')
+    .replace(/\[allow_link_access\]/gi, '')
+    .replace(/\[unlisted\]/gi, '')
+    .trim();
+};
+
+export const getCleanDescriptionText = getCleanDescription;
+
+/**
+ * Extracts promotional destination URL from description if present.
+ */
+export const extractDestinationUrl = (description) => {
+  if (!description) return null;
+  const match = description.match(/\[link:\s*(https?:\/\/[^\s\]]+)\]/i);
+  return match ? match[1] : null;
+};
+
+/**
+ * Gets clean domain name from URL (e.g., "github.com")
+ */
+export const getDomainFromUrl = (url) => {
+  if (!url) return '';
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.replace(/^www\./, '');
+  } catch (e) {
+    return url;
+  }
 };
 
 /**
  * Formats description string with or without link access tag.
  */
 export const formatDescriptionWithPrivacy = (cleanDescription, allowLinkAccess) => {
-  const base = (cleanDescription || '').replace(/\[allow_link_access\]/gi, '').replace(/\[unlisted\]/gi, '').trim();
+  const base = getCleanDescription(cleanDescription);
   if (allowLinkAccess) {
     return base ? `${base} ${LINK_ACCESS_TAG}` : LINK_ACCESS_TAG;
   }
   return base;
 };
+
+/**
+ * Formats description string with destination URL and privacy tag.
+ */
+export const formatDescriptionWithLink = (cleanDescription, destinationUrl, allowLinkAccess) => {
+  let base = getCleanDescription(cleanDescription);
+  if (destinationUrl && destinationUrl.trim()) {
+    let url = destinationUrl.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+    base = base ? `${base} [link: ${url}]` : `[link: ${url}]`;
+  }
+  if (allowLinkAccess) {
+    base = base ? `${base} ${LINK_ACCESS_TAG}` : LINK_ACCESS_TAG;
+  }
+  return base;
+};
+

@@ -1,4 +1,5 @@
 import { getOptimizedImageUrl } from '../utils/image';
+import { extractDestinationUrl, getDomainFromUrl } from '../utils/privacy';
 
 export const renderMasonryGrid = (images, hasMore = false, gridId = 'gallery-masonry-grid', showLoadMoreButton = false) => {
   if (!images || images.length === 0) {
@@ -15,6 +16,7 @@ export const renderMasonryGrid = (images, hasMore = false, gridId = 'gallery-mas
     // Generate optimized CDN thumbnail source from Google Drive or cloud storage
     const rawUrl = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
     const imageUrl = getOptimizedImageUrl(rawUrl, 600);
+    const destUrl = extractDestinationUrl(img.description);
     
     return `
       <div class="masonry-item animate-fade" data-id="${img.id}">
@@ -34,11 +36,19 @@ export const renderMasonryGrid = (images, hasMore = false, gridId = 'gallery-mas
             </div>
             <div class="pin-bottom-info">
               <h4 class="pin-title">${img.title}</h4>
-              <div class="pin-author">
-                <img src="${img.users?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" class="pin-author-img" alt="Avatar">
-                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
-                  ${img.users?.display_name || 'Anonymous'}
-                </span>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+                <div class="pin-author">
+                  <img src="${img.users?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" class="pin-author-img" alt="Avatar">
+                  <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px;">
+                    ${img.users?.display_name || 'Anonymous'}
+                  </span>
+                </div>
+                ${destUrl ? `
+                  <a href="${destUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-glass btn-sm" style="font-size: 0.7rem; padding: 4px 8px; border-radius: var(--radius-full); text-decoration: none; color: #fff; background: var(--accent-gradient); display: inline-flex; align-items: center; gap: 4px; box-shadow: var(--shadow-sm);" onclick="event.stopPropagation();" title="Visit ${destUrl}">
+                    <span class="material-icons-outlined" style="font-size: 0.8rem;">open_in_new</span>
+                    <span>Visit</span>
+                  </a>
+                ` : ''}
               </div>
             </div>
           </div>
