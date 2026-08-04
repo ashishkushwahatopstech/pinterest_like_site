@@ -1,9 +1,9 @@
 // Google Drive API Integration Helpers (V3 REST API)
 // All operations are executed using the short-lived access token retrieved from our Worker.
 
-// Retrieve or create the root app folder "PinterestStyleGallery"
+// Retrieve or create the root app folder "PinGridGallery"
 export const getRootFolder = async (accessToken) => {
-  const q = "name = 'PinterestStyleGallery' and mimeType = 'application/vnd.google-apps.folder' and trashed = false";
+  const q = "(name = 'PinGridGallery' or name = 'PinterestStyleGallery') and mimeType = 'application/vnd.google-apps.folder' and trashed = false";
   const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)`, {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
@@ -25,7 +25,7 @@ export const getRootFolder = async (accessToken) => {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      name: "PinterestStyleGallery",
+      name: "PinGridGallery",
       mimeType: "application/vnd.google-apps.folder"
     })
   });

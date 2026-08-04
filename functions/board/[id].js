@@ -10,7 +10,7 @@ export async function onRequest(context) {
 
   let title = "Curated Board Collection";
   let description = "Browse this custom-curated folder collection of backup images on the PinGrid network.";
-  let imageUrl = "https://pinterest-style-site.pages.dev/favicon.svg";
+  let imageUrl = new URL('/favicon.svg', request.url).href;
 
   if (supabaseUrl && supabaseKey && boardId) {
     try {

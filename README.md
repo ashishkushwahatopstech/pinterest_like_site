@@ -1,6 +1,6 @@
-# PinGrid - Pinterest-style Image Gallery
+# PinGrid - Visual Discovery & Image Collection Platform
 
-A lightweight, high-performance, serverless Pinterest-style image gallery platform. Users sign in using Firebase Auth, connect their own Google Drive as free storage (via `drive.file` scope), create public/private boards, upload images with real-time progress bars, and view a public masonry gallery. Admins can moderate content, suspend users, and toggle signups. There is also a buried experimental option to duplicate uploads to Supabase Storage.
+A lightweight, high-performance, serverless visual discovery and image collection platform. Users sign in using Firebase Auth, connect their own Google Drive as free storage (via `drive.file` scope), create public/private boards, upload images with real-time progress bars, and view a public masonry gallery. Admins can moderate content, suspend users, and toggle signups. There is also a buried experimental option to duplicate uploads to Supabase Storage.
 
 ## Technology Stack
 - **Frontend**: Vite + Vanilla JS (no heavy framework dependencies for minimal bundle size)

@@ -52,7 +52,7 @@ export const InfoView = {
     } else {
       title = 'About Us';
       contentHtml = `
-        <p><strong>PinGrid</strong> is a premium, edge-optimized Pinterest-style cloud backup and image sharing platform built to run seamlessly on top of serverless clouds like Cloudflare Pages.</p>
+        <p><strong>PinGrid</strong> is a premium, edge-optimized visual discovery and image collection platform built to run seamlessly on top of serverless cloud infrastructure.</p>
         
         <h3 style="color: var(--text-primary); font-size: 1.25rem; font-weight: 700; margin-top: 16px;">How it Works</h3>
         <p>Unlike traditional galleries that require expensive web servers and database storage for images, PinGrid uses a <strong>decentralized cloud storage hybrid model</strong>:</p>

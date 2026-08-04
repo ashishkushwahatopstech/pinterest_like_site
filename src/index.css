@@ -405,7 +405,7 @@ body::before {
   contain-intrinsic-size: 1px 300px;
 }
 
-/* Pinterest Card */
+/* Pin Gallery Card */
 .pin-card {
   position: relative;
   border-radius: var(--radius-md);

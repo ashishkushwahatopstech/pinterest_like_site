@@ -29,7 +29,7 @@ create table public.user_credentials (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Boards Table (Pinterest boards mapping 1:1 to Google Drive folders)
+-- Boards Table (Collection boards mapping 1:1 to Google Drive folders)
 create table public.boards (
   id uuid primary key default gen_random_uuid(),
   user_id text not null references public.users(id) on delete cascade,

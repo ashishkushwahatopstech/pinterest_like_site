@@ -735,7 +735,7 @@ const loadBrandingSettings = async () => {
   const siteName = window.appState.siteSettings.site_name || 'PinGrid';
   
   // Update browser document title
-  document.title = `${siteName} - Premium Pinterest-style Image Gallery`;
+  document.title = `${siteName} - High Resolution Visual Gallery & Collection Platform`;
   
   // Render footer
   const footerWrapper = document.getElementById('footer-wrapper');

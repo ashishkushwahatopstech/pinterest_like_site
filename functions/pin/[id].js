@@ -11,7 +11,7 @@ export async function onRequest(context) {
 
   let title = "Discover Backup Images & Art";
   let description = "Explore beautiful backups, shared pins, and custom image galleries on PinGrid.";
-  let imageUrl = "https://pinterest-style-site.pages.dev/favicon.svg";
+  let imageUrl = new URL('/favicon.svg', request.url).href;
 
   // Fetch image metadata from Supabase REST endpoint
   if (supabaseUrl && supabaseKey && imageId) {
