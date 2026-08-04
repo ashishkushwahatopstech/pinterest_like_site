@@ -599,7 +599,23 @@ const openLightboxOverlay = async (imageId) => {
           return;
         }
 
-        let validRelated = (rawRelated || []).filter(img => canUserAccessRecord(img, user, isAdmin) && canUserAccessRecord(img.boards, user, isAdmin));
+        let validRelated = (rawRelated || []).filter(img => {
+          const imgOk = canUserAccessRecord(img, user, isAdmin);
+          const boardOk = !img.boards || canUserAccessRecord(img.boards, user, isAdmin);
+          return imgOk && boardOk;
+        });
+
+        // Fallback: If no related images found, fetch general public gallery images
+        if (validRelated.length === 0) {
+          const { data: publicFallback } = await supabasePublic
+            .from('images')
+            .select('*, users!images_user_id_fkey(*)')
+            .eq('is_public', true)
+            .neq('id', imageId)
+            .limit(12);
+
+          validRelated = publicFallback || [];
+        }
 
         if (validRelated && validRelated.length > 0) {
           // Sort related images based on content similarity and user interests
