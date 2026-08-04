@@ -1086,11 +1086,18 @@ body::before {
 .settings-content {
   padding: 32px;
   border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 @media (max-width: 767px) {
   .settings-content {
-    padding: 16px;
+    padding: 16px 12px;
+    border-radius: var(--radius-md);
   }
 }
 

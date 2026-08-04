@@ -114,70 +114,72 @@ export const SettingsView = {
     const currentBio = profile.channel_bio || '';
 
     return `
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
-        <div>
-          <h2 style="font-size: 1.4rem; font-family: var(--font-heading); margin: 0; display: flex; align-items: center; gap: 8px;">
-            <span class="material-icons-outlined" style="color: var(--accent-primary);">campaign</span>
-            <span>Creator Channel Setup</span>
-          </h2>
-          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
-            Set up your unique channel handle and profile details to unlock board creation and image uploads.
-          </p>
+      <div style="max-width: 100%; box-sizing: border-box; min-width: 0;">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 180px;">
+            <h2 style="font-size: 1.3rem; font-family: var(--font-heading); margin: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span class="material-icons-outlined" style="color: var(--accent-primary);">campaign</span>
+              <span>Creator Channel Setup</span>
+            </h2>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
+              Set up your unique channel handle and profile details to unlock board creation and image uploads.
+            </p>
+          </div>
+          
+          <span class="btn-glass" style="padding: 6px 12px; font-size: 0.75rem; border-radius: var(--radius-full); font-weight: 700; color: ${isCreator ? '#22c55e' : '#ff3366'}; border: 1px solid ${isCreator ? 'rgba(34, 197, 94, 0.3)' : 'rgba(255, 51, 102, 0.3)'}; max-width: 100%; word-break: break-word;">
+            ${isCreator ? '✅ Creator Channel Active' : '🔒 Channel Required for Uploads'}
+          </span>
         </div>
-        
-        <span class="btn-glass" style="padding: 6px 12px; font-size: 0.75rem; border-radius: var(--radius-full); font-weight: 700; color: ${isCreator ? '#22c55e' : '#ff3366'}; border: 1px solid ${isCreator ? 'rgba(34, 197, 94, 0.3)' : 'rgba(255, 51, 102, 0.3)'};">
-          ${isCreator ? '✅ Creator Channel Active' : '🔒 Channel Required for Uploads'}
-        </span>
-      </div>
 
-      ${isCreator ? `
-        <div style="margin-bottom: 24px; padding: 14px 18px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-          <div>
-            <div style="font-weight: 700; color: #22c55e; font-size: 0.9rem;">Your Public Creator Handle & URL is Live</div>
-            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">
-              Direct Link: <code>${window.location.origin}/u/${currentUsername}</code>
+        ${isCreator ? `
+          <div style="margin-bottom: 24px; padding: 14px 16px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; max-width: 100%; box-sizing: border-box;">
+            <div style="flex: 1; min-width: 0; max-width: 100%; overflow-wrap: break-word; word-break: break-word;">
+              <div style="font-weight: 700; color: #22c55e; font-size: 0.9rem;">Your Public Creator Handle & URL is Live</div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; overflow-wrap: anywhere; word-break: break-all;">
+                Direct Link: <code style="word-break: break-all; overflow-wrap: anywhere; font-size: 0.75rem; background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px; display: inline-block; max-width: 100%;">${window.location.origin}/u/${currentUsername}</code>
+              </div>
+            </div>
+            <a href="/u/${currentUsername}" class="btn btn-primary btn-sm" style="padding: 8px 16px; font-size: 0.8rem; font-weight: 700; flex-shrink: 0;">
+              <span>View Channel</span>
+              <span class="material-icons-outlined" style="font-size: 0.9rem; margin-left: 4px;">open_in_new</span>
+            </a>
+          </div>
+        ` : ''}
+
+        <form id="creator-channel-form" style="max-width: 100%; box-sizing: border-box;">
+          <div class="form-group" style="margin-bottom: 20px; max-width: 100%; box-sizing: border-box;">
+            <label class="form-label" for="channel-username-input" style="font-weight: 700; font-size: 0.9rem;">
+              Unique Handle / Username <span style="color: #ff3366;">*</span>
+            </label>
+            <div style="position: relative; width: 100%; box-sizing: border-box;">
+              <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 700; color: var(--text-muted); user-select: none;">@</span>
+              <input type="text" id="channel-username-input" class="form-control" style="padding-left: 32px; width: 100%; box-sizing: border-box;" placeholder="e.g. ashish_studio" value="${currentUsername}" required maxlength="30" pattern="[a-z0-9_]+" autocomplete="off">
+            </div>
+            <div id="username-status-msg" style="font-size: 0.75rem; margin-top: 6px; color: var(--text-secondary); word-break: break-word; overflow-wrap: break-word;">
+              Lowercase letters, numbers, and underscores only (3-30 characters). URL: /u/@handle
             </div>
           </div>
-          <a href="/u/${currentUsername}" class="btn btn-primary btn-sm" style="padding: 6px 14px; font-size: 0.8rem; font-weight: 700;">
-            <span>View Channel</span>
-            <span class="material-icons-outlined" style="font-size: 0.9rem; margin-left: 4px;">open_in_new</span>
-          </a>
-        </div>
-      ` : ''}
 
-      <form id="creator-channel-form">
-        <div class="form-group" style="margin-bottom: 20px;">
-          <label class="form-label" for="channel-username-input" style="font-weight: 700; font-size: 0.9rem;">
-            Unique Handle / Username <span style="color: #ff3366;">*</span>
-          </label>
-          <div style="position: relative;">
-            <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 700; color: var(--text-muted); user-select: none;">@</span>
-            <input type="text" id="channel-username-input" class="form-control" style="padding-left: 32px;" placeholder="e.g. ashish_studio" value="${currentUsername}" required maxlength="30" pattern="[a-z0-9_]+" autocomplete="off">
+          <div class="form-group" style="margin-bottom: 20px; max-width: 100%; box-sizing: border-box;">
+            <label class="form-label" for="channel-name-input" style="font-weight: 700; font-size: 0.9rem;">
+              Channel Display Name <span style="color: #ff3366;">*</span>
+            </label>
+            <input type="text" id="channel-name-input" class="form-control" style="width: 100%; box-sizing: border-box;" placeholder="e.g. Ashish's Creative Studio" value="${currentChannelName}" required maxlength="60" autocomplete="off">
           </div>
-          <div id="username-status-msg" style="font-size: 0.75rem; margin-top: 6px; color: var(--text-secondary);">
-            Lowercase letters, numbers, and underscores only (3-30 characters). URL: /u/@handle
+
+          <div class="form-group" style="margin-bottom: 24px; max-width: 100%; box-sizing: border-box;">
+            <label class="form-label" for="channel-bio-input" style="font-weight: 700; font-size: 0.9rem;">
+              Channel Bio / Description
+            </label>
+            <textarea id="channel-bio-input" class="form-control" style="width: 100%; box-sizing: border-box;" rows="3" placeholder="Tell visitors about your collections, photography, or digital artwork..." maxlength="300">${currentBio}</textarea>
           </div>
-        </div>
 
-        <div class="form-group" style="margin-bottom: 20px;">
-          <label class="form-label" for="channel-name-input" style="font-weight: 700; font-size: 0.9rem;">
-            Channel Display Name <span style="color: #ff3366;">*</span>
-          </label>
-          <input type="text" id="channel-name-input" class="form-control" placeholder="e.g. Ashish's Creative Studio" value="${currentChannelName}" required maxlength="60" autocomplete="off">
-        </div>
-
-        <div class="form-group" style="margin-bottom: 24px;">
-          <label class="form-label" for="channel-bio-input" style="font-weight: 700; font-size: 0.9rem;">
-            Channel Bio / Description
-          </label>
-          <textarea id="channel-bio-input" class="form-control" rows="3" placeholder="Tell visitors about your collections, photography, or digital artwork..." maxlength="300">${currentBio}</textarea>
-        </div>
-
-        <button type="submit" id="save-channel-btn" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
-          <span class="material-icons-outlined">${isCreator ? 'save' : 'rocket_launch'}</span>
-          <span>${isCreator ? 'Save Channel Changes' : '🚀 Launch Creator Channel & Unlock Uploads'}</span>
-        </button>
-      </form>
+          <button type="submit" id="save-channel-btn" class="btn btn-primary" style="width: 100%; padding: 12px 16px; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box; white-space: normal; text-align: center; word-break: break-word;">
+            <span class="material-icons-outlined">${isCreator ? 'save' : 'rocket_launch'}</span>
+            <span>${isCreator ? 'Save Channel Changes' : '🚀 Launch Creator Channel & Unlock Uploads'}</span>
+          </button>
+        </form>
+      </div>
     `;
   },
 
