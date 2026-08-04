@@ -43,26 +43,7 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
         
         <!-- Main Detail Card -->
         <div class="lightbox-main-card glass animate-fade">
-          <!-- Detail Breadcrumb Navigation Bar (Positioned BEFORE Image) -->
-          <div class="lightbox-breadcrumb-header" style="padding: 12px 16px; font-size: 0.8rem; width: 100%; max-width: 100%; box-sizing: border-box; border-bottom: 1px solid var(--border-color); background: var(--bg-secondary); border-radius: var(--radius-lg) var(--radius-lg) 0 0; overflow: hidden;">
-            ${(() => {
-              const referrer = sessionStorage.getItem('lightbox_referrer') || sessionStorage.getItem('pin_restore_referrer') || '';
-              const isFromProfile = referrer.includes('/profile') || (currentUser && currentUser.uid === img.user_id);
-              
-              const items = [{ label: 'Home', url: '/', icon: 'home' }];
-              if (isFromProfile) {
-                items.push({ label: 'My Profile', url: '/profile', icon: 'person' });
-              }
-              if (img.boards) {
-                const bUrl = window.appState?.getBoardUrl ? window.appState.getBoardUrl(img.boards) : '/';
-                items.push({ label: img.boards.name, url: bUrl, icon: 'folder' });
-              }
-              items.push({ label: img.title });
-              return renderBreadcrumb(items);
-            })()}
-          </div>
-
-          <div class="lightbox-content-wrapper" style="position: relative; background: var(--bg-secondary); min-height: 200px; display: flex; align-items: center; justify-content: center; border-radius: 0; overflow: hidden; width: 100%; max-width: 100%; box-sizing: border-box;">
+          <div class="lightbox-content-wrapper" style="position: relative; background: var(--bg-secondary); min-height: 200px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-lg) 0 0 var(--radius-lg); overflow: hidden; width: 100%; max-width: 100%; box-sizing: border-box;">
             <!-- Skeleton loader that displays while loading -->
             <div class="skeleton lightbox-image-skeleton" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1;"></div>
             <img class="lightbox-image" src="${imageUrl}" alt="${img.title}" decoding="async" style="opacity: 0; transition: opacity 0.3s ease; z-index: 2; max-width: 100%; width: 100%; height: auto; object-fit: contain; box-sizing: border-box;" onload="this.style.opacity='1'; const sk = this.previousElementSibling; if(sk) sk.style.display='none';">
@@ -71,10 +52,28 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
             </button>
           </div>
           
-          <div class="lightbox-details animate-slide-up" style="background: var(--bg-secondary); border-radius: 0 0 var(--radius-lg) var(--radius-lg); border-left: none; padding: 24px 18px; box-shadow: var(--shadow-md); display: flex; flex-direction: column; justify-content: space-between; overflow-y: auto; width: 100%; max-width: 100%; box-sizing: border-box;">
+          <div class="lightbox-details animate-slide-up" style="background: var(--bg-secondary); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 28px; box-shadow: var(--shadow-md); display: flex; flex-direction: column; justify-content: space-between; overflow-y: auto; width: 100%; max-width: 100%; box-sizing: border-box;">
             <div>
               <!-- Static Details Section -->
               <div id="lightbox-static-details" style="width: 100%; max-width: 100%; box-sizing: border-box;">
+                <!-- Detail Breadcrumb Navigation Bar -->
+                <div class="lightbox-breadcrumb-header" style="margin-bottom: 14px; font-size: 0.8rem; width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden;">
+                  ${(() => {
+                    const referrer = sessionStorage.getItem('lightbox_referrer') || sessionStorage.getItem('pin_restore_referrer') || '';
+                    const isFromProfile = referrer.includes('/profile') || (currentUser && currentUser.uid === img.user_id);
+                    
+                    const items = [{ label: 'Home', url: '/', icon: 'home' }];
+                    if (isFromProfile) {
+                      items.push({ label: 'My Profile', url: '/profile', icon: 'person' });
+                    }
+                    if (img.boards) {
+                      const bUrl = window.appState?.getBoardUrl ? window.appState.getBoardUrl(img.boards) : '/';
+                      items.push({ label: img.boards.name, url: bUrl, icon: 'folder' });
+                    }
+                    items.push({ label: img.title });
+                    return renderBreadcrumb(items);
+                  })()}
+                </div>
                 <!-- Title Container: 100% full width below image -->
                 <div id="lightbox-title-container" style="width: 100%; max-width: 100%; box-sizing: border-box; margin-bottom: 16px; overflow: hidden;">
                   <h2 class="lightbox-title mobile-truncate" id="lightbox-title-display" style="width: 100%; max-width: 100%; box-sizing: border-box; color: var(--text-primary); font-family: var(--font-heading); font-size: 1.3rem; font-weight: 700; margin: 0 0 12px 0; word-break: break-word; line-height: 1.35; display: block;">${img.title}</h2>
