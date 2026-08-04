@@ -533,6 +533,15 @@ body::before {
   gap: 3px;
 }
 
+/* Mobile view: Remove/hide image likes and views overlay in gallery grid cards */
+@media (max-width: 768px) {
+  .masonry-grid .pin-views-badge,
+  .masonry-grid .pin-save-btn,
+  .masonry-grid .btn-like {
+    display: none !important;
+  }
+}
+
 /* Breadcrumbs Responsive Styling */
 .breadcrumb-list::-webkit-scrollbar {
   display: none;
