@@ -1,3 +1,4 @@
+import { renderBreadcrumb } from '../components/Breadcrumb';
 import { supabasePublic, getSupabase } from '../services/supabase';
 import { renderMasonryGrid, setupGridEvents, setupInfiniteScroll } from '../components/MasonryGrid';
 import { renderPinSkeleton } from '../components/Skeleton';
@@ -333,7 +334,20 @@ export const HomeView = {
       this.selectedShapeFilter === 'landscape' ? 'Landscape' :
       this.selectedShapeFilter === 'square' ? 'Square' : 'All Shapes';
 
+    const breadcrumbItems = [{ label: 'Home Gallery', url: '/', icon: 'home' }];
+    if (this.selectedBoardId) {
+      const boardObj = this.boards.find(b => b.id === this.selectedBoardId);
+      const bName = boardObj ? boardObj.name : 'Collection';
+      breadcrumbItems.push({ label: 'Collections', url: '/' });
+      breadcrumbItems.push({ label: bName, icon: 'folder' });
+    } else if (this.searchQuery) {
+      breadcrumbItems.push({ label: `Search: "${this.searchQuery}"`, icon: 'search' });
+    }
+
+    const breadcrumbHtml = breadcrumbItems.length > 1 ? renderBreadcrumb(breadcrumbItems) : '';
+
     filterContainer.innerHTML = `
+      ${breadcrumbHtml}
       <div class="filter-panel-wrapper">
         <div class="filter-search-row">
           <!-- In-View Search Input -->

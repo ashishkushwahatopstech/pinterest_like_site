@@ -1,3 +1,4 @@
+import { renderBreadcrumb } from './Breadcrumb';
 import { makeFilePublic } from '../services/drive';
 import { getGoogleDriveToken } from '../services/api';
 import { getOptimizedImageUrl } from '../utils/image';
@@ -71,6 +72,15 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
                     ` : ''}
                     <span class="material-icons-outlined" id="title-expand-icon" style="font-size: 1.8rem; display: none; cursor: pointer; user-select: none;">expand_more</span>
                   </div>
+                </div>
+
+                <!-- Detail Breadcrumb Navigation Bar -->
+                <div style="margin-bottom: 12px; font-size: 0.8rem;">
+                  ${renderBreadcrumb([
+                    { label: 'Home', url: '/', icon: 'home' },
+                    ...(img.boards ? [{ label: img.boards.name, url: window.appState?.getBoardUrl ? window.appState.getBoardUrl(img.boards) : '/', icon: 'folder' }] : []),
+                    { label: img.title }
+                  ])}
                 </div>
 
                 <!-- Always Visible Image Stats Badge Row (Views & Likes System) -->
