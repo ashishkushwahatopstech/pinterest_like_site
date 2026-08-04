@@ -587,45 +587,51 @@ const openLightboxOverlay = async (imageId) => {
       try {
         const client = user ? await getSupabase() : supabasePublic;
         
-        let { data: rawRelated, error: relErr } = await client
+        // 1. Primary Query: Try matching same board or public gallery
+        let relatedQuery = client
           .from('images')
           .select('*, users!images_user_id_fkey(*), boards(*)')
-          .neq('id', imageId)
-          .order('created_at', { ascending: false })
-          .limit(20);
+          .neq('id', imageId);
 
-        if (relErr) {
-          console.warn("Failed to fetch related images:", relErr);
-          return;
+        if (data.board_id) {
+          relatedQuery = relatedQuery.eq('board_id', data.board_id);
         }
 
-        let validRelated = (rawRelated || []).filter(img => {
+        let { data: primaryImages } = await relatedQuery.limit(8);
+
+        let relatedImages = (primaryImages || []).filter(img => {
           const imgOk = canUserAccessRecord(img, user, isAdmin);
           const boardOk = !img.boards || canUserAccessRecord(img.boards, user, isAdmin);
           return imgOk && boardOk;
         });
 
-        // Fallback: If no related images found, fetch general public gallery images
-        if (validRelated.length === 0) {
-          const { data: publicFallback } = await supabasePublic
+        // 2. Fallback Query: Fill up to 8 images with recent public discovery pins if needed
+        if (relatedImages.length < 8) {
+          let { data: fallbackImages } = await supabasePublic
             .from('images')
-            .select('*, users!images_user_id_fkey(*)')
+            .select('*, users!images_user_id_fkey(*), boards(*)')
             .eq('is_public', true)
             .neq('id', imageId)
-            .limit(12);
+            .order('created_at', { ascending: false })
+            .limit(16);
 
-          validRelated = publicFallback || [];
+          if (fallbackImages) {
+            const existingIds = new Set(relatedImages.map(r => r.id));
+            const filteredFallback = fallbackImages.filter(f => !existingIds.has(f.id));
+            const needed = 8 - relatedImages.length;
+            relatedImages = [...relatedImages, ...filteredFallback.slice(0, needed)];
+          }
         }
 
-        if (validRelated && validRelated.length > 0) {
+        if (relatedImages && relatedImages.length > 0) {
           // Sort related images based on content similarity and user interests
-          const recommendations = getRelatedRecommendations(data, validRelated).slice(0, 8);
+          relatedImages = getRelatedRecommendations(data, relatedImages);
 
           const relatedSection = document.getElementById('lightbox-related-section');
           const relatedGridContainer = document.getElementById('lightbox-related-grid-container');
           
           if (relatedSection && relatedGridContainer) {
-            relatedGridContainer.innerHTML = renderMasonryGrid(recommendations, false, 'gallery-masonry-grid-related');
+            relatedGridContainer.innerHTML = renderMasonryGrid(relatedImages, false, 'gallery-masonry-grid-related');
             relatedSection.style.display = 'block';
 
             const relatedGridEl = document.getElementById('gallery-masonry-grid-related');
@@ -633,7 +639,7 @@ const openLightboxOverlay = async (imageId) => {
               setupGridEvents(
                 relatedGridEl,
                 (pinId) => {
-                  const imgObj = recommendations.find(img => img.id === pinId);
+                  const imgObj = relatedImages.find(img => img.id === pinId);
                   const slug = imgObj ? window.appState.slugify(imgObj.title) : 'pin';
                   window.appState.navigate(`/pin/${slug}--${pinId}`);
 
@@ -648,8 +654,8 @@ const openLightboxOverlay = async (imageId) => {
             }
           }
         }
-      } catch (relErr) {
-        console.warn("Error processing related images:", relErr);
+      } catch (rErr) {
+        console.warn("Failed to load related images:", rErr);
       }
     })();
   } catch (err) {
