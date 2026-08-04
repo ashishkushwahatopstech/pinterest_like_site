@@ -473,21 +473,129 @@ export const SettingsView = {
     // Creator Channel section handlers
     if (this.activeSection === 'channel') {
       const channelForm = document.getElementById('creator-channel-form');
+      const usernameInput = document.getElementById('channel-username-input');
+      const statusMsg = document.getElementById('username-status-msg');
+      const saveBtn = document.getElementById('save-channel-btn');
+
+      let debounceTimer = null;
+      let isUsernameAvailable = false;
+      const currentSavedUsername = (window.appState.currentUserProfile?.username || '').toLowerCase();
+
+      const checkUsernameLive = () => {
+        if (!usernameInput || !statusMsg || !saveBtn) return;
+
+        const rawVal = usernameInput.value.trim().toLowerCase();
+        const cleanVal = rawVal.replace(/[^a-z0-9_]/g, '');
+
+        // Auto-sanitize input field value if user typed invalid chars
+        if (usernameInput.value !== cleanVal) {
+          usernameInput.value = cleanVal;
+        }
+
+        if (debounceTimer) clearTimeout(debounceTimer);
+
+        if (!cleanVal || cleanVal.length < 3) {
+          isUsernameAvailable = false;
+          saveBtn.disabled = true;
+          statusMsg.innerHTML = `
+            <span style="color: #ef4444; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;">
+              <span class="material-icons-outlined" style="font-size: 0.95rem;">error_outline</span>
+              <span>Handle must be at least 3 characters (lowercase letters, numbers, underscores).</span>
+            </span>
+          `;
+          return;
+        }
+
+        if (cleanVal === currentSavedUsername) {
+          isUsernameAvailable = true;
+          saveBtn.disabled = false;
+          statusMsg.innerHTML = `
+            <span style="color: #22c55e; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;">
+              <span class="material-icons-outlined" style="font-size: 0.95rem;">check_circle</span>
+              <span>@${cleanVal} is your current active handle.</span>
+            </span>
+          `;
+          return;
+        }
+
+        // Lock button & show WhatsApp-style checking status indicator
+        saveBtn.disabled = true;
+        statusMsg.innerHTML = `
+          <span style="color: var(--accent-primary); display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+            <span class="material-icons-outlined animate-spin" style="font-size: 0.95rem;">sync</span>
+            <span>Checking availability for @${cleanVal}...</span>
+          </span>
+        `;
+
+        // Debounce database query by 400ms to minimize server load
+        debounceTimer = setTimeout(async () => {
+          try {
+            const supabase = await getSupabase();
+            const currentUser = window.appState.currentUser;
+
+            const { data, error } = await supabase
+              .from('users')
+              .select('id')
+              .eq('username', cleanVal)
+              .neq('id', currentUser?.uid || '')
+              .limit(1);
+
+            if (error) {
+              // Database column missing fallback
+              isUsernameAvailable = true;
+              saveBtn.disabled = false;
+              statusMsg.innerHTML = `
+                <span style="color: #22c55e; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;">
+                  <span class="material-icons-outlined" style="font-size: 0.95rem;">check_circle</span>
+                  <span>@${cleanVal} (Ready to save)</span>
+                </span>
+              `;
+              return;
+            }
+
+            if (data && data.length > 0) {
+              isUsernameAvailable = false;
+              saveBtn.disabled = true;
+              statusMsg.innerHTML = `
+                <span style="color: #ef4444; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;">
+                  <span class="material-icons-outlined" style="font-size: 0.95rem;">cancel</span>
+                  <span>@${cleanVal} is already taken by another creator.</span>
+                </span>
+              `;
+            } else {
+              isUsernameAvailable = true;
+              saveBtn.disabled = false;
+              statusMsg.innerHTML = `
+                <span style="color: #22c55e; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;">
+                  <span class="material-icons-outlined" style="font-size: 0.95rem;">check_circle</span>
+                  <span>@${cleanVal} is available!</span>
+                </span>
+              `;
+            }
+          } catch (err) {
+            console.warn("Live handle check warning:", err);
+          }
+        }, 400);
+      };
+
+      if (usernameInput) {
+        usernameInput.addEventListener('input', checkUsernameLive);
+        // Initial check
+        checkUsernameLive();
+      }
+
       if (channelForm) {
         channelForm.onsubmit = async (e) => {
           e.preventDefault();
-          const usernameInput = document.getElementById('channel-username-input');
           const nameInput = document.getElementById('channel-name-input');
           const bioInput = document.getElementById('channel-bio-input');
-          const saveBtn = document.getElementById('save-channel-btn');
 
-          const rawUsername = usernameInput ? usernameInput.value.trim().toLowerCase() : '';
-          const cleanUsername = rawUsername.replace(/[^a-z0-9_]/g, '');
+          const cleanUsername = usernameInput ? usernameInput.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '') : '';
           const channelName = nameInput ? nameInput.value.trim() : '';
           const channelBio = bioInput ? bioInput.value.trim() : '';
 
-          if (!cleanUsername || cleanUsername.length < 3) {
-            alert("Username handle must be at least 3 characters long (letters, numbers, underscores).");
+          if (!isUsernameAvailable) {
+            alert("Please enter a valid, available unique handle before submitting.");
             return;
           }
 
@@ -499,32 +607,14 @@ export const SettingsView = {
           saveBtn.disabled = true;
           saveBtn.innerHTML = `
             <span class="material-icons-outlined animate-spin">sync</span>
-            <span>Checking availability & saving...</span>
+            <span>Saving Creator Channel...</span>
           `;
 
           try {
             const supabase = await getSupabase();
             const currentUser = window.appState.currentUser;
 
-            // 1. Validate username uniqueness
-            const { data: existingUsers, error: checkErr } = await supabase
-              .from('users')
-              .select('id')
-              .eq('username', cleanUsername)
-              .neq('id', currentUser.uid);
-
-            if (checkErr) throw checkErr;
-            if (existingUsers && existingUsers.length > 0) {
-              alert(`The handle @${cleanUsername} is already taken by another creator. Please choose a different unique handle.`);
-              saveBtn.disabled = false;
-              saveBtn.innerHTML = `
-                <span class="material-icons-outlined">rocket_launch</span>
-                <span>Launch Creator Channel & Unlock Uploads</span>
-              `;
-              return;
-            }
-
-            // 2. Update user profile in Supabase table
+            // Update user profile in Supabase table
             const { data: updatedUsers, error: updateErr } = await supabase
               .from('users')
               .update({
