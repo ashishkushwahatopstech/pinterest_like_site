@@ -6,6 +6,8 @@ export async function onRequest(context) {
 
   const url = new URL(request.url);
   const baseUrl = `${url.protocol}//${url.host}`;
+  const pageParam = url.searchParams.get('page');
+  const typeParam = url.searchParams.get('type'); // 'main' | 'images'
 
   // Complete XML character escape helper (fixes xmlParseEntityRef: no name error on & < > ' ")
   const escapeXml = (str) => {
@@ -42,56 +44,148 @@ export async function onRequest(context) {
       .trim();
   };
 
-  let boards = [];
-  let images = [];
+  const PAGE_SIZE = 50000; // Max allowed per Google Sitemap spec
+  let totalImages = 0;
 
   if (supabaseUrl && supabaseKey) {
     try {
-      // 1. Fetch public boards
-      const boardsRes = await fetch(`${supabaseUrl}/rest/v1/boards?is_public=eq.true&select=id,name&limit=5000`, {
+      // Get exact count of public images from Supabase
+      const countRes = await fetch(`${supabaseUrl}/rest/v1/images?is_public=eq.true&select=id`, {
+        method: 'HEAD',
         headers: {
           apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`
+          Authorization: `Bearer ${supabaseKey}`,
+          Prefer: 'count=exact'
         }
       });
-      if (boardsRes.ok) {
-        boards = await boardsRes.json();
-      }
-
-      // 2. Fetch public images (fetch up to 50,000 images for Google Bot indexing)
-      const imagesRes = await fetch(`${supabaseUrl}/rest/v1/images?is_public=eq.true&select=id,title,description,drive_file_id,drive_view_link&limit=50000`, {
-        headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`
+      const countHeader = countRes.headers.get('content-range');
+      if (countHeader) {
+        const parts = countHeader.split('/');
+        if (parts.length > 1) {
+          totalImages = parseInt(parts[1], 10) || 0;
         }
-      });
-      if (imagesRes.ok) {
-        images = await imagesRes.json();
       }
     } catch (err) {
-      console.error("Failed to fetch database items for dynamic sitemap:", err);
+      console.error("Failed to query count for sitemap index:", err);
     }
   }
 
-  // Build the valid XML response
+  // -------------------------------------------------------------
+  // MODE 1: Master Sitemap Index File (When > 50,000 images)
+  // -------------------------------------------------------------
+  if (totalImages > PAGE_SIZE && !pageParam && typeParam !== 'main') {
+    const totalChunks = Math.ceil(totalImages / PAGE_SIZE);
+    
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+    xml += `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+    
+    // Main sitemap (static pages & boards)
+    xml += `  <sitemap>\n    <loc>${escapeXml(baseUrl)}/sitemap.xml?type=main</loc>\n  </sitemap>\n`;
+    
+    // Image sitemap chunks (up to 50,000 images per sub-file)
+    for (let p = 1; p <= totalChunks; p++) {
+      xml += `  <sitemap>\n    <loc>${escapeXml(baseUrl)}/sitemap.xml?type=images&amp;page=${p}</loc>\n  </sitemap>\n`;
+    }
+    
+    xml += `</sitemapindex>`;
+
+    return new Response(xml, {
+      headers: {
+        "Content-Type": "application/xml;charset=UTF-8",
+        "Cache-Control": "public, max-age=3600, s-maxage=3600"
+      }
+    });
+  }
+
+  // -------------------------------------------------------------
+  // MODE 2: Main Sitemap (Static Pages + Public Boards)
+  // -------------------------------------------------------------
+  if (typeParam === 'main') {
+    let boards = [];
+    if (supabaseUrl && supabaseKey) {
+      try {
+        const boardsRes = await fetch(`${supabaseUrl}/rest/v1/boards?is_public=eq.true&select=id,name&limit=5000`, {
+          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+        });
+        if (boardsRes.ok) boards = await boardsRes.json();
+      } catch (err) {
+        console.error("Failed to fetch boards for main sitemap:", err);
+      }
+    }
+
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+    xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+    xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
+    xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/about</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+    xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/privacy</loc>\n    <changefreq>yearly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
+    xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/terms</loc>\n    <changefreq>yearly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
+
+    for (const b of boards) {
+      if (!b.name || !b.id) continue;
+      const boardUrl = `${baseUrl}/board/${slugify(b.name)}--${b.id}`;
+      xml += `  <url>\n    <loc>${escapeXml(boardUrl)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+    }
+    xml += `</urlset>`;
+
+    return new Response(xml, {
+      headers: {
+        "Content-Type": "application/xml;charset=UTF-8",
+        "Cache-Control": "public, max-age=3600, s-maxage=3600"
+      }
+    });
+  }
+
+  // -------------------------------------------------------------
+  // MODE 3: Single Sitemap OR Chunked Image Sitemap Page
+  // -------------------------------------------------------------
+  let boards = [];
+  let images = [];
+  const pageNum = parseInt(pageParam, 10) || 1;
+  const from = (pageNum - 1) * PAGE_SIZE;
+  const to = pageNum * PAGE_SIZE - 1;
+
+  if (supabaseUrl && supabaseKey) {
+    try {
+      // Include boards on page 1 / single file mode
+      if (pageNum === 1 && !typeParam) {
+        const boardsRes = await fetch(`${supabaseUrl}/rest/v1/boards?is_public=eq.true&select=id,name&limit=5000`, {
+          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+        });
+        if (boardsRes.ok) boards = await boardsRes.json();
+      }
+
+      // Fetch images for target range (up to 50,000 per page)
+      const imagesRes = await fetch(`${supabaseUrl}/rest/v1/images?is_public=eq.true&select=id,title,description,drive_file_id,drive_view_link&order=created_at.desc`, {
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+          Range: `${from}-${to}`
+        }
+      });
+      if (imagesRes.ok) images = await imagesRes.json();
+    } catch (err) {
+      console.error("Failed to fetch images for sitemap chunk:", err);
+    }
+  }
+
   let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
   xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n`;
   xml += `        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n`;
-  
-  // Static Pages
-  xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
-  xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/about</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
-  xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/privacy</loc>\n    <changefreq>yearly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
-  xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/terms</loc>\n    <changefreq>yearly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
 
-  // Dynamic Public Board Collections
-  for (const b of boards) {
-    if (!b.name || !b.id) continue;
-    const boardUrl = `${baseUrl}/board/${slugify(b.name)}--${b.id}`;
-    xml += `  <url>\n    <loc>${escapeXml(boardUrl)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+  // Include static pages and boards on single sitemap mode or page 1
+  if (pageNum === 1 && !typeParam) {
+    xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
+    xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/about</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+    xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/privacy</loc>\n    <changefreq>yearly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
+    xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/terms</loc>\n    <changefreq>yearly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
+
+    for (const b of boards) {
+      if (!b.name || !b.id) continue;
+      const boardUrl = `${baseUrl}/board/${slugify(b.name)}--${b.id}`;
+      xml += `  <url>\n    <loc>${escapeXml(boardUrl)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+    }
   }
 
-  // Dynamic Public Pin Pages with Google Image sitemap tags
   for (const img of images) {
     if (!img.id) continue;
     const pinUrl = `${baseUrl}/pin/${slugify(img.title)}--${img.id}`;
