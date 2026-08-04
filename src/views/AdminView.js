@@ -1,3 +1,4 @@
+import { renderBreadcrumb } from '../components/Breadcrumb';
 import { getSupabase, isUserAdmin } from '../services/supabase';
 import { renderAdminSkeleton } from '../components/Skeleton';
 import { deleteFromDrive } from '../services/drive';
@@ -265,8 +266,14 @@ export const AdminView = {
     const maxStorage = 15 * 1024 * 1024 * 1024; // 15GB
     const storagePercent = ((this.stats.totalStorageEst / maxStorage) * 100).toFixed(2);
 
+    const breadcrumbHtml = renderBreadcrumb([
+      { label: 'Home', url: '/', icon: 'home' },
+      { label: 'Admin Dashboard', icon: 'admin_panel_settings' }
+    ]);
+
     container.innerHTML = `
       <div class="container animate-fade" style="padding-top: 40px; padding-bottom: 60px;">
+        ${breadcrumbHtml}
         <h1 style="font-size: 2.2rem; margin-bottom: 24px; font-family: var(--font-heading); color: var(--text-primary);">Admin Control Panel</h1>
         
         <!-- Stats Overview Grid -->

@@ -1,3 +1,4 @@
+import { renderBreadcrumb } from '../components/Breadcrumb';
 import { getSupabase, supabasePublic } from '../services/supabase';
 import { renderMasonryGrid, setupGridEvents } from '../components/MasonryGrid';
 import { renderPinSkeleton } from '../components/Skeleton';
@@ -138,9 +139,15 @@ export const BoardView = {
       ? (this.images[0].drive_view_link || `https://lh3.googleusercontent.com/d/${this.images[0].drive_file_id}`)
       : 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1200&q=80';
     const coverUrl = getOptimizedImageUrl(rawCover, 800);
+    const breadcrumbHtml = renderBreadcrumb([
+      { label: 'Home', url: '/', icon: 'home' },
+      { label: 'Collections', url: '/' },
+      { label: boardName, icon: 'folder' }
+    ]);
 
     container.innerHTML = `
       <div class="container animate-fade" style="padding-top: 24px;">
+        ${breadcrumbHtml}
         <!-- Dynamic Board Cover Banner -->
         <div class="board-cover" style="height: 200px; border-radius: var(--radius-lg); overflow: hidden; position: relative; margin-bottom: -50px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
           <img src="${coverUrl}" style="width: 100%; height: 100%; object-fit: cover; filter: blur(2px) brightness(0.75);" alt="Board Cover" loading="lazy" decoding="async">
@@ -249,8 +256,9 @@ export const BoardView = {
       setupGridEvents(
         gridEl,
         (pinId) => {
+          sessionStorage.setItem('pin_restore_scroll', window.scrollY);
+          sessionStorage.setItem('pin_restore_referrer', window.location.pathname + window.location.search);
           const imgObj = this.images.find(img => img.id === pinId);
-          sessionStorage.setItem('lightbox_referrer', window.location.pathname + window.location.search);
           window.appState.navigate(window.appState.getPinUrl(imgObj || pinId));
         },
         async (pinId, likeBtn) => {

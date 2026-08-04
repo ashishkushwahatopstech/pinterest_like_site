@@ -1,3 +1,5 @@
+import { renderBreadcrumb } from '../components/Breadcrumb';
+
 export const InfoView = {
   render: async function(params = {}) {
     const type = params.type || 'privacy';
@@ -38,13 +40,6 @@ export const InfoView = {
         <p>Welcome to PinGrid! These terms and conditions outline the rules and regulations for the use of PinGrid's serverless image gallery backup system.</p>
         
         <h3 style="color: var(--text-primary); font-size: 1.25rem; font-weight: 700; margin-top: 16px;">1. Terms of Use</h3>
-        <p>By accessing this website, we assume you accept these terms and conditions. Do not continue to use PinGrid if you do not agree to take all of the terms and conditions stated on this page.</p>
-        
-        <h3 style="color: var(--text-primary); font-size: 1.25rem; font-weight: 700; margin-top: 16px;">2. Google Drive Storage & Upload Ownership</h3>
-        <p>PinGrid operates as an interface mapping authorized Google Drive directories to a public gallery feed. You retain full copyright and ownership of any images uploaded to your Google Drive via PinGrid. By uploading, you acknowledge that:</p>
-        <ul style="padding-left: 20px; display: flex; flex-direction: column; gap: 8px;">
-          <li>You possess the rights to distribute the uploaded artwork or wallpapers.</li>
-          <li>You authorize PinGrid to display the files inside public collections you set as public.</li>
           <li>You accept that Google Drive serves as the primary host of these files, subject to Google storage quotas.</li>
         </ul>
 
@@ -77,8 +72,14 @@ export const InfoView = {
       `;
     }
 
+    const breadcrumbHtml = renderBreadcrumb([
+      { label: 'Home', url: '/', icon: 'home' },
+      { label: title, icon: 'info' }
+    ]);
+
     container.innerHTML = `
       <div class="container animate-fade" style="padding: 40px 16px; max-width: 800px; margin: 0 auto;">
+        ${breadcrumbHtml}
         <div class="glass" style="padding: 40px; border-radius: var(--radius-lg); border: 1px solid var(--border-color); background: var(--bg-secondary); box-shadow: var(--shadow-md);">
           <h1 style="font-family: var(--font-heading); font-size: 2.2rem; font-weight: 800; color: var(--text-primary); margin-bottom: 24px; border-bottom: 2px solid var(--border-color); padding-bottom: 12px;">${title}</h1>
           <div class="info-content" style="color: var(--text-secondary); line-height: 1.8; font-size: 0.95rem; display: flex; flex-direction: column; gap: 16px;">

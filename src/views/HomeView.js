@@ -596,8 +596,9 @@ export const HomeView = {
       setupGridEvents(
         gridEl,
         (pinId) => {
+          sessionStorage.setItem('pin_restore_scroll', window.scrollY);
+          sessionStorage.setItem('pin_restore_referrer', window.location.pathname + window.location.search);
           const imgObj = this.images.find(img => img.id === pinId);
-          sessionStorage.setItem('lightbox_referrer', window.location.pathname + window.location.search);
           window.appState.navigate(window.appState.getPinUrl(imgObj || pinId));
         },
         async (pinId, likeBtn) => {

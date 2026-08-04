@@ -1,3 +1,4 @@
+import { renderBreadcrumb } from '../components/Breadcrumb';
 import { getSupabase } from '../services/supabase';
 import { getGoogleDriveToken } from '../services/api';
 
@@ -42,8 +43,14 @@ export const SettingsView = {
     const email = user.email;
     const avatar = user.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80';
 
+    const breadcrumbHtml = renderBreadcrumb([
+      { label: 'Home', url: '/', icon: 'home' },
+      { label: 'Settings', icon: 'settings' }
+    ]);
+
     container.innerHTML = `
       <div class="container animate-fade" style="padding-top: 40px; max-width: 1000px; padding-bottom: 60px;">
+        ${breadcrumbHtml}
         <h1 style="font-size: 2rem; font-family: var(--font-heading); margin-bottom: 24px;">Settings</h1>
 
         <div class="settings-layout">

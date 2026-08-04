@@ -25,11 +25,15 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
   return `
     <div class="lightbox show ${isInfoHidden ? 'hide-info' : ''}" id="lightbox-modal">
       <!-- Fixed Controls Toolbar -->
-      <button class="lightbox-close-btn" id="lightbox-close-btn" aria-label="Close Lightbox" style="position: fixed; z-index: 310;">
+      <button class="lightbox-close-btn" id="lightbox-back-btn" aria-label="Go Back to Previous Position" style="position: fixed; top: 24px; left: 24px; z-index: 310;" title="Back to previous gallery position">
+        <span class="material-icons-outlined" style="font-size: 1.8rem; color: var(--text-primary);">arrow_back</span>
+      </button>
+
+      <button class="lightbox-close-btn" id="lightbox-close-btn" aria-label="Close Lightbox" style="position: fixed; top: 24px; right: 24px; z-index: 310;" title="Close image detail view">
         <span class="material-icons-outlined" style="font-size: 1.8rem; color: var(--text-primary);">close</span>
       </button>
       
-      <button class="lightbox-close-btn" id="lightbox-info-toggle-btn" style="right: 88px; position: fixed; z-index: 310;" aria-label="Toggle Fullscreen">
+      <button class="lightbox-close-btn" id="lightbox-info-toggle-btn" style="top: 24px; right: 88px; position: fixed; z-index: 310;" aria-label="Toggle Fullscreen" title="Toggle Fullscreen">
         <span class="material-icons-outlined" id="info-toggle-icon" style="font-size: 1.8rem; color: var(--text-primary);">fullscreen</span>
       </button>
       
@@ -223,6 +227,7 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
 };
 
 export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
+  const backBtn = document.getElementById('lightbox-back-btn');
   const closeBtn = document.getElementById('lightbox-close-btn');
   const infoToggleBtn = document.getElementById('lightbox-info-toggle-btn');
   const downloadBtn = document.getElementById('lightbox-download-btn');
@@ -243,8 +248,7 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
   const collapsibleDrawer = document.getElementById('lightbox-collapsible-drawer');
   const expandIcon = document.getElementById('title-expand-icon');
 
-  const closeLightbox = () => {
-    // Exit native fullscreen if active
+  const exitNativeFullscreen = () => {
     if (document.fullscreenElement || document.webkitFullscreenElement) {
       if (document.exitFullscreen) {
         document.exitFullscreen();
@@ -252,23 +256,55 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
         document.webkitExitFullscreen();
       }
     }
+  };
 
-    if (lightboxModal) {
-      lightboxModal.classList.remove('show');
-      
-      const referrer = sessionStorage.getItem('lightbox_referrer');
-      sessionStorage.removeItem('lightbox_referrer');
-      if (referrer && referrer !== window.location.pathname) {
-        window.appState.navigate(referrer, true);
-      } else {
-        window.appState.navigate('/', true);
-      }
-    }
+  // Back Arrow: Returns user to the exact previous scroll position on the gallery page
+  const goBackToPreviousPosition = () => {
+    exitNativeFullscreen();
+
+    const savedScrollY = parseInt(sessionStorage.getItem('pin_restore_scroll') || '0', 10);
+    const referrer = sessionStorage.getItem('lightbox_referrer') || sessionStorage.getItem('pin_restore_referrer') || '/';
+
+    const wrapper = document.getElementById('lightbox-wrapper');
+    if (wrapper) wrapper.innerHTML = '';
+    if (lightboxModal) lightboxModal.classList.remove('show');
+
+    window.appState.navigate(referrer, true);
+
+    setTimeout(() => {
+      window.scrollTo({ top: savedScrollY, behavior: 'instant' });
+    }, 40);
+
     if (callbacks.onClose) callbacks.onClose();
   };
 
+  // Close Cross Button: Closes image and returns user to home or parent board page
+  const closeLightboxToTop = () => {
+    exitNativeFullscreen();
+
+    const referrer = sessionStorage.getItem('lightbox_referrer') || sessionStorage.getItem('pin_restore_referrer') || '/';
+
+    const wrapper = document.getElementById('lightbox-wrapper');
+    if (wrapper) wrapper.innerHTML = '';
+    if (lightboxModal) lightboxModal.classList.remove('show');
+
+    if (referrer && referrer.includes('/board/')) {
+      const boardPath = referrer.split('?')[0];
+      window.appState.navigate(boardPath, true);
+    } else {
+      window.appState.navigate('/', true);
+    }
+    window.scrollTo({ top: 0, behavior: 'instant' });
+
+    if (callbacks.onClose) callbacks.onClose();
+  };
+
+  if (backBtn) {
+    backBtn.addEventListener('click', goBackToPreviousPosition);
+  }
+
   if (closeBtn) {
-    closeBtn.addEventListener('click', closeLightbox);
+    closeBtn.addEventListener('click', closeLightboxToTop);
   }
 
   // Toggle fullscreen mode (combining Native elements request + layout fallback classes)

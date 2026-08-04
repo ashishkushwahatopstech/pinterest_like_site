@@ -1,3 +1,4 @@
+import { renderBreadcrumb } from '../components/Breadcrumb';
 import { getSupabase } from '../services/supabase';
 import { renderBoardSkeleton, renderProfileSkeleton } from '../components/Skeleton';
 import { getAppStorageUsage } from '../services/drive';
@@ -130,9 +131,14 @@ export const ProfileView = {
       ? (likedImages[0].drive_view_link || `https://lh3.googleusercontent.com/d/${likedImages[0].drive_file_id}`)
       : 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1200&q=80';
     const coverUrl = getOptimizedImageUrl(rawCover, 800);
+    const breadcrumbHtml = renderBreadcrumb([
+      { label: 'Home', url: '/', icon: 'home' },
+      { label: 'My Profile', icon: 'person' }
+    ]);
 
     container.innerHTML = `
       <div class="container animate-fade" style="padding-top: 24px;">
+        ${breadcrumbHtml}
         <!-- Dynamic Profile Cover Banner -->
         <div class="profile-cover" style="height: 200px; border-radius: var(--radius-lg); overflow: hidden; position: relative; margin-bottom: -50px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
           <img src="${coverUrl}" style="width: 100%; height: 100%; object-fit: cover; filter: blur(2px) brightness(0.65);" alt="Profile Cover" loading="lazy" decoding="async">

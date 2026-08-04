@@ -533,6 +533,25 @@ body::before {
   gap: 3px;
 }
 
+/* Breadcrumbs Responsive Styling */
+.breadcrumb-list::-webkit-scrollbar {
+  display: none;
+}
+
+.breadcrumb-link:hover {
+  color: var(--accent-primary) !important;
+}
+
+@media (max-width: 640px) {
+  .breadcrumb-container {
+    margin-bottom: 16px !important;
+  }
+  .breadcrumb-list {
+    padding: 6px 12px !important;
+    font-size: 0.78rem !important;
+  }
+}
+
 .pin-bottom-info {
   color: #fff;
 }
