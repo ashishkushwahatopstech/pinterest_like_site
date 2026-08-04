@@ -511,6 +511,10 @@ export const AdminView = {
           <td>
             <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; color: var(--text-primary);">${img.title}</div>
             <div style="font-size: 0.75rem; color: var(--text-muted);">Board: ${img.boards?.name || 'Unassigned'}</div>
+            <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px;">
+              <span style="display: inline-flex; align-items: center; gap: 2px; margin-right: 8px;"><span class="material-icons-outlined" style="font-size: 0.8rem; vertical-align: middle;">visibility</span> ${img.views_count || 0}</span>
+              <span style="display: inline-flex; align-items: center; gap: 2px;"><span class="material-icons-outlined" style="font-size: 0.8rem; vertical-align: middle; color: #ff3366;">favorite</span> ${img.likes_count || 0}</span>
+            </div>
           </td>
           <td>
             <div style="font-size: 0.8rem; font-weight: 500; color: var(--text-secondary);">${img.users?.display_name || 'Anonymous'}</div>

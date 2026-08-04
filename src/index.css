@@ -481,17 +481,56 @@ body::before {
 }
 
 .pin-save-btn {
-  background: var(--accent-primary);
-  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: var(--radius-full);
   padding: 6px 12px;
   font-size: 0.8rem;
   font-weight: 700;
-  transition: var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .pin-save-btn:hover {
-  background: var(--accent-hover);
+  background: rgba(0, 0, 0, 0.75);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.06);
+}
+
+.pin-save-btn.btn-primary,
+.pin-save-btn.liked {
+  background: var(--accent-gradient, linear-gradient(135deg, #ff3366 0%, #ff6b35 100%));
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(255, 51, 102, 0.35);
+}
+
+.pin-save-btn.btn-primary:hover,
+.pin-save-btn.liked:hover {
+  background: var(--accent-gradient, linear-gradient(135deg, #ff3366 0%, #ff6b35 100%));
+  transform: scale(1.08);
+  box-shadow: 0 6px 16px rgba(255, 51, 102, 0.5);
+}
+
+.pin-views-badge {
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 6px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .pin-bottom-info {

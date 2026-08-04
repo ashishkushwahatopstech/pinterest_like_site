@@ -17,6 +17,9 @@ export const renderMasonryGrid = (images, hasMore = false, gridId = 'gallery-mas
     const rawUrl = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
     const imageUrl = getOptimizedImageUrl(rawUrl, 600);
     const destUrl = extractDestinationUrl(img.description);
+    const isLiked = window.appState?.userLikesSet ? window.appState.userLikesSet.has(img.id) : (img.is_liked || false);
+    const viewsCount = img.views_count ?? 0;
+    const likesCount = img.likes_count ?? 0;
     
     return `
       <div class="masonry-item animate-fade" data-id="${img.id}">
@@ -29,10 +32,16 @@ export const renderMasonryGrid = (images, hasMore = false, gridId = 'gallery-mas
               ${img.boards ? `
                 <span class="pin-board-badge">${img.boards.name}</span>
               ` : '<span></span>'}
-              <button class="pin-save-btn btn-like" data-id="${img.id}" aria-label="Like image">
-                <span class="material-icons-outlined" style="font-size: 1rem; vertical-align: middle;">favorite</span>
-                <span class="likes-count-label" style="vertical-align: middle; margin-left: 2px;">${img.likes_count}</span>
-              </button>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span class="pin-views-badge" title="${viewsCount} views">
+                  <span class="material-icons-outlined" style="font-size: 0.85rem; vertical-align: middle;">visibility</span>
+                  <span class="views-count-label" style="vertical-align: middle; margin-left: 2px;">${viewsCount}</span>
+                </span>
+                <button class="pin-save-btn btn-like ${isLiked ? 'btn-primary liked' : 'btn-secondary'}" data-id="${img.id}" aria-label="Like image" title="${isLiked ? 'Unlike' : 'Like'}">
+                  <span class="material-icons-outlined" style="font-size: 1rem; vertical-align: middle;">${isLiked ? 'favorite' : 'favorite_border'}</span>
+                  <span class="likes-count-label" style="vertical-align: middle; margin-left: 2px;">${likesCount}</span>
+                </button>
+              </div>
             </div>
             <div class="pin-bottom-info">
               <h4 class="pin-title">${img.title}</h4>

@@ -18,6 +18,9 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
 
   const destUrl = extractDestinationUrl(img.description);
   const cleanDescText = getCleanDescription(img.description);
+  const isLiked = window.appState?.userLikesSet ? window.appState.userLikesSet.has(img.id) : (img.is_liked || false);
+  const viewsCount = img.views_count ?? 0;
+  const likesCount = img.likes_count ?? 0;
 
   return `
     <div class="lightbox show ${isInfoHidden ? 'hide-info' : ''}" id="lightbox-modal">
@@ -52,8 +55,8 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
                   <h2 class="lightbox-title mobile-truncate" id="lightbox-title-display" style="color: var(--text-primary); font-family: var(--font-heading); font-size: 1.25rem; font-weight: 700; margin: 0; word-break: break-word; line-height: 1.3;">${img.title}</h2>
                   <div style="display: flex; align-items: center; gap: 12px;">
                     <!-- Like Button (Always visible) -->
-                    <button class="btn btn-secondary btn-icon btn-like" data-id="${img.id}" style="border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); cursor: pointer;" aria-label="Like image">
-                      <span class="material-icons-outlined" style="color: var(--accent-primary); font-size: 1.2rem;">favorite</span>
+                    <button class="btn ${isLiked ? 'btn-primary liked' : 'btn-secondary'} btn-icon btn-like" data-id="${img.id}" style="border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s ease;" aria-label="Like image" title="${isLiked ? 'Unlike' : 'Like'}">
+                      <span class="material-icons-outlined" style="${isLiked ? 'color: #ffffff;' : 'color: var(--text-secondary);'} font-size: 1.25rem;">${isLiked ? 'favorite' : 'favorite_border'}</span>
                     </button>
                     
                     ${isOwner || isAdmin ? `
@@ -69,7 +72,7 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
                 <!-- Collapsible drawer on mobile -->
                 <div id="lightbox-collapsible-drawer">
                   <!-- User Profile Details Card (Inside the toggle) -->
-                  <div class="lightbox-user" style="display: flex; align-items: center; gap: 12px; margin-top: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+                  <div class="lightbox-user" style="display: flex; align-items: center; gap: 12px; margin-top: 8px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
                     <div style="position: relative; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: var(--bg-tertiary); flex-shrink: 0; border: 1px solid var(--border-color);">
                       <div class="skeleton" style="position: absolute; inset: 0; z-index: 1;"></div>
                       <img src="${img.users?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s ease; position: relative; z-index: 2;" onload="this.style.opacity='1'; const sk=this.previousElementSibling; if(sk) sk.style.display='none';" onerror="const sk=this.previousElementSibling; if(sk) sk.style.display='none';">
@@ -78,6 +81,18 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
                       <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">${img.users?.display_name || 'Anonymous'}</div>
                       <div style="font-size: 0.75rem; color: var(--text-secondary);">Uploaded ${new Date(img.created_at).toLocaleDateString()}</div>
                     </div>
+                  </div>
+
+                  <!-- Image Stats Badge Row (Views & Likes System) -->
+                  <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px; padding: 8px 12px; background: var(--bg-primary); border-radius: var(--radius-md); border: 1px solid var(--border-color); font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">
+                    <span style="display: inline-flex; align-items: center; gap: 6px;" title="Views System">
+                      <span class="material-icons-outlined" style="font-size: 1.1rem; color: var(--text-muted);">visibility</span>
+                      <span id="lightbox-views-count" class="views-count-label" style="font-weight: 700; color: var(--text-primary);">${viewsCount}</span> views
+                    </span>
+                    <span style="display: inline-flex; align-items: center; gap: 6px;" title="Likes">
+                      <span class="material-icons-outlined" style="font-size: 1.1rem; color: var(--accent-primary);">favorite</span>
+                      <span id="lightbox-likes-count" class="likes-count-label" style="font-weight: 700; color: var(--text-primary);">${likesCount}</span> likes
+                    </span>
                   </div>
 
                   <p class="lightbox-desc" id="lightbox-desc-display" style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 20px; font-size: 0.9rem; word-break: break-word;">${cleanDescText || 'No description provided.'}</p>

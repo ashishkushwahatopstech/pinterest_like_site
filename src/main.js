@@ -69,6 +69,7 @@ import { renderMasonryGrid, setupGridEvents } from './components/MasonryGrid';
 window.appState = {
   currentUser: null,
   isAdmin: false,
+  userLikesSet: new Set(),
   siteSettings: {
     site_name: 'PinGrid',
     allow_signups: true,
@@ -76,6 +77,24 @@ window.appState = {
   },
   googleCodeClient: null,
   applyCustomAppearance: applyAppearanceOnBoot,
+  
+  incrementViews: async (pinId) => {
+    if (!pinId) return;
+    try {
+      const supabase = window.appState.currentUser ? await getSupabase() : supabasePublic;
+      const { data, error } = await supabase.rpc('increment_views', { image_uuid: pinId });
+      if (error) {
+        // Direct update fallback
+        const { data: fetchImg } = await supabase.from('images').select('views_count').eq('id', pinId).single();
+        const currentViews = fetchImg?.views_count || 0;
+        const { data: updated } = await supabase.from('images').update({ views_count: currentViews + 1 }).eq('id', pinId).select().single();
+        return updated?.views_count ?? (currentViews + 1);
+      }
+      return data?.views_count;
+    } catch (err) {
+      console.warn("Failed to increment views:", err);
+    }
+  },
   
   navigate: (path, replace = false) => {
     if (replace) {
@@ -285,16 +304,12 @@ window.appState = {
 
     try {
       const supabase = await getSupabase();
-      
-      // Check if liked
-      const { data, error } = await supabase
-        .from('likes')
-        .select('*')
-        .eq('user_id', user.uid)
-        .eq('image_id', pinId);
+      if (!window.appState.userLikesSet) {
+        window.appState.userLikesSet = new Set();
+      }
 
-      if (error) throw error;
-      const alreadyLiked = data.length > 0;
+      // Check if liked using userLikesSet or database query
+      const alreadyLiked = window.appState.userLikesSet.has(pinId);
 
       let response;
       if (alreadyLiked) {
@@ -308,6 +323,7 @@ window.appState = {
         if (unlikeErr) throw unlikeErr;
         
         response = await supabase.rpc('decrement_likes', { image_uuid: pinId });
+        window.appState.userLikesSet.delete(pinId);
       } else {
         // Like
         const { error: likeErr } = await supabase
@@ -317,6 +333,7 @@ window.appState = {
         if (likeErr) throw likeErr;
         
         response = await supabase.rpc('increment_likes', { image_uuid: pinId });
+        window.appState.userLikesSet.add(pinId);
 
         // Track like interest
         try {
@@ -337,23 +354,47 @@ window.appState = {
         }
       }
 
+      const isNowLiked = window.appState.userLikesSet.has(pinId);
       const updatedCount = response.data?.likes_count ?? 0;
       
-      // Update UI of like button
-      if (likeBtn) {
-        const label = likeBtn.querySelector('.likes-count-label');
-        const icon = likeBtn.querySelector('.material-icons-outlined');
-        if (label) label.textContent = updatedCount;
+      // Synchronize ALL like buttons for this image on the current page
+      const allLikeBtns = document.querySelectorAll(`.btn-like[data-id="${pinId}"]`);
+      allLikeBtns.forEach(btn => {
+        const labels = btn.querySelectorAll('.likes-count-label');
+        labels.forEach(l => l.textContent = updatedCount);
+        const icon = btn.querySelector('.material-icons-outlined');
         
-        if (alreadyLiked) {
-          likeBtn.classList.remove('btn-primary');
-          likeBtn.classList.add('btn-secondary');
-          if (icon) icon.style.color = '';
+        if (isNowLiked) {
+          btn.classList.remove('btn-secondary');
+          btn.classList.add('btn-primary', 'liked');
+          btn.setAttribute('title', 'Unlike');
+          if (icon) {
+            icon.textContent = 'favorite';
+            if (btn.classList.contains('pin-save-btn')) {
+              icon.style.color = '#fff';
+            } else {
+              icon.style.color = '#ffffff';
+            }
+          }
         } else {
-          likeBtn.classList.remove('btn-secondary');
-          likeBtn.classList.add('btn-primary');
-          if (icon) icon.style.color = '#fff';
+          btn.classList.remove('btn-primary', 'liked');
+          btn.classList.add('btn-secondary');
+          btn.setAttribute('title', 'Like');
+          if (icon) {
+            icon.textContent = 'favorite_border';
+            if (btn.classList.contains('pin-save-btn')) {
+              icon.style.color = '';
+            } else {
+              icon.style.color = 'var(--text-secondary)';
+            }
+          }
         }
+      });
+
+      // Also update standalone likes-count-label elements in Lightbox if present
+      const lightboxLikesCount = document.getElementById('lightbox-likes-count');
+      if (lightboxLikesCount) {
+        lightboxLikesCount.textContent = updatedCount;
       }
     } catch (err) {
       console.error(err);
@@ -465,8 +506,17 @@ const openLightboxOverlay = async (imageId) => {
       return;
     }
 
-    // Track view interest
+    // Track view interest and increment views counter
     trackUserView(data);
+    window.appState.incrementViews(data.id).then(newViews => {
+      if (typeof newViews === 'number') {
+        data.views_count = newViews;
+        const viewsEl = document.getElementById('lightbox-views-count');
+        if (viewsEl) viewsEl.textContent = newViews;
+        const gridViewsEls = document.querySelectorAll(`[data-id="${data.id}"] .views-count-label`);
+        gridViewsEls.forEach(el => el.textContent = newViews);
+      }
+    });
 
     // Update SEO Metadata for search bot index crawls
     const imageUrl = data.drive_view_link || `https://lh3.googleusercontent.com/d/${data.drive_file_id}`;
@@ -972,6 +1022,7 @@ const initApp = async () => {
   subscribeToAuth(async (user) => {
     window.appState.currentUser = user;
     window.appState.isAdmin = false;
+    window.appState.userLikesSet = new Set();
     updateDrawerHTML(user, false);
 
     // Show header in loading state
@@ -1004,6 +1055,18 @@ const initApp = async () => {
           .select();
 
         if (error) throw error;
+
+        // Fetch user's liked image IDs for unfilled/filled like button status
+        try {
+          const { data: likesData } = await supabase
+            .from('likes')
+            .select('image_id')
+            .eq('user_id', user.uid);
+          window.appState.userLikesSet = new Set((likesData || []).map(l => l.image_id));
+        } catch (lErr) {
+          console.warn("Failed to fetch user likes set:", lErr);
+          window.appState.userLikesSet = new Set();
+        }
 
         // Check if user is suspended
         if (data && data[0]?.is_suspended) {

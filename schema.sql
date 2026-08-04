@@ -48,6 +48,7 @@ create table public.images (
   supabase_storage_path text, -- Backup copy if enabled
   is_public boolean default false,
   likes_count integer default 0 not null,
+  views_count integer default 0 not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -184,6 +185,20 @@ begin
   set likes_count = greatest(0, likes_count - 1)
   where id = image_uuid
   returning id, likes_count into result;
+  return row_to_json(result)::jsonb;
+end;
+$$ language plpgsql security definer;
+
+-- Increment views count atomically
+create or replace function public.increment_views(image_uuid uuid)
+returns jsonb as $$
+declare
+  result record;
+begin
+  update public.images
+  set views_count = views_count + 1
+  where id = image_uuid
+  returning id, views_count into result;
   return row_to_json(result)::jsonb;
 end;
 $$ language plpgsql security definer;
