@@ -177,42 +177,50 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
                   </div>
                 </div>
 
-                <div class="lightbox-actions" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 20px;">
-                  <!-- Standard HD Download -->
-                  <button id="lightbox-download-btn" data-href="${img.drive_download_link || imageUrl}" data-title="${img.title}" class="btn btn-secondary" style="flex: 1; min-width: 110px; gap: 6px; align-items: center; justify-content: center; display: flex; padding: 12px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
-                    <span class="material-icons-outlined">download</span>
-                    <span>HD Download</span>
-                  </button>
-                  
-                  <!-- Ultra HD 4K Original Download (PRO) -->
-                  <button id="lightbox-pro-download-btn" data-href="${img.drive_download_link || rawUrl}" data-title="${img.title}" class="btn btn-primary" style="flex: 1.2; min-width: 140px; gap: 6px; align-items: center; justify-content: center; display: flex; padding: 12px; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%); color: #000; box-shadow: 0 4px 14px rgba(255, 215, 0, 0.35);">
-                    <span class="material-icons-outlined" style="font-size: 1.1rem;">workspace_premium</span>
-                    <span>4K Ultra HD</span>
-                  </button>
-
-                  <!-- AI Color Palette Button (PRO) -->
-                  <button id="lightbox-palette-btn" class="btn btn-glass" style="padding: 12px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; border: 1px solid rgba(255,215,0,0.4);" title="Extract Color Palette">
-                    <span class="material-icons-outlined" style="color: #ffd700; font-size: 1.2rem;">palette</span>
-                    <span style="font-size: 0.85rem;">Colors</span>
-                  </button>
-
-                  <button id="lightbox-share-btn" class="btn btn-secondary" style="padding: 12px 14px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
-                    <span class="material-icons-outlined">share</span>
-                    <span>Share</span>
-                  </button>
-                  
-                  ${isAdmin ? `
-                    <button id="lightbox-hide-btn" class="btn btn-danger" style="border-color: #f59e0b; color: #fbbf24; background: rgba(245, 158, 11, 0.1); padding: 12px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">
-                      <span class="material-icons-outlined">visibility_off</span>
-                      <span>${img.is_public ? 'Hide' : 'Publish'}</span>
+                <!-- Action Buttons Card -->
+                <div class="lightbox-actions-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 18px; width: 100%; max-width: 100%; box-sizing: border-box;">
+                  <!-- Row 1: Primary Download Buttons -->
+                  <div style="display: flex; gap: 8px; width: 100%; max-width: 100%; box-sizing: border-box;">
+                    <!-- Standard HD Download -->
+                    <button id="lightbox-download-btn" data-href="${img.drive_download_link || imageUrl}" data-title="${img.title}" class="btn btn-secondary" style="flex: 1; gap: 6px; align-items: center; justify-content: center; display: flex; padding: 10px 14px; border-radius: var(--radius-md); font-weight: 700; font-size: 0.85rem; cursor: pointer; border: 1px solid var(--border-color); box-sizing: border-box; min-width: 0;">
+                      <span class="material-icons-outlined" style="font-size: 1.1rem;">download</span>
+                      <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">HD Download</span>
                     </button>
-                  ` : ''}
-                  
-                  ${canDelete ? `
-                    <button id="lightbox-delete-btn" class="btn btn-danger" style="padding: 12px; border-radius: var(--radius-md); cursor: pointer;" aria-label="Delete Image">
-                      <span class="material-icons-outlined">delete</span>
+                    
+                    <!-- Ultra HD 4K Original Download (PRO) -->
+                    <button id="lightbox-pro-download-btn" data-href="${img.drive_download_link || rawUrl}" data-title="${img.title}" class="btn btn-primary" style="flex: 1; gap: 6px; align-items: center; justify-content: center; display: flex; padding: 10px 14px; border-radius: var(--radius-md); font-weight: 700; font-size: 0.85rem; cursor: pointer; background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%); color: #000; border: none; box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3); box-sizing: border-box; min-width: 0;">
+                      <span class="material-icons-outlined" style="font-size: 1.1rem;">workspace_premium</span>
+                      <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">4K Ultra HD</span>
                     </button>
-                  ` : ''}
+                  </div>
+
+                  <!-- Row 2: Secondary Quick Actions & Share -->
+                  <div style="display: flex; gap: 8px; width: 100%; max-width: 100%; box-sizing: border-box; flex-wrap: wrap;">
+                    <!-- AI Color Palette Button (PRO) -->
+                    <button id="lightbox-palette-btn" class="btn btn-glass" style="flex: 1; padding: 8px 12px; border-radius: var(--radius-md); font-weight: 600; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; border: 1px solid rgba(255,215,0,0.35); min-width: 0; box-sizing: border-box;" title="Extract Color Palette">
+                      <span class="material-icons-outlined" style="color: #ffd700; font-size: 1.1rem;">palette</span>
+                      <span>Colors</span>
+                    </button>
+
+                    <!-- Share Button -->
+                    <button id="lightbox-share-btn" class="btn btn-secondary" style="flex: 1; padding: 8px 12px; border-radius: var(--radius-md); font-weight: 600; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; border: 1px solid var(--border-color); min-width: 0; box-sizing: border-box;">
+                      <span class="material-icons-outlined" style="font-size: 1.1rem;">share</span>
+                      <span>Share</span>
+                    </button>
+                    
+                    ${isAdmin ? `
+                      <button id="lightbox-hide-btn" class="btn btn-danger" style="border-color: rgba(245, 158, 11, 0.3); color: #fbbf24; background: rgba(245, 158, 11, 0.1); padding: 8px 12px; border-radius: var(--radius-md); font-weight: 600; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; box-sizing: border-box;">
+                        <span class="material-icons-outlined" style="font-size: 1.1rem;">visibility_off</span>
+                        <span>${img.is_public ? 'Hide' : 'Publish'}</span>
+                      </button>
+                    ` : ''}
+                    
+                    ${canDelete ? `
+                      <button id="lightbox-delete-btn" class="btn btn-danger" style="padding: 8px 12px; border-radius: var(--radius-md); cursor: pointer; display: flex; align-items: center; justify-content: center; box-sizing: border-box;" aria-label="Delete Image" title="Delete Image">
+                        <span class="material-icons-outlined" style="font-size: 1.1rem;">delete</span>
+                      </button>
+                    ` : ''}
+                  </div>
                 </div>
               </div>
 
