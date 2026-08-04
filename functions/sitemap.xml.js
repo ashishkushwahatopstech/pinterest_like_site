@@ -1,13 +1,29 @@
 export async function onRequest(context) {
   const { request, env } = context;
   
-  const supabaseUrl = env.VITE_SUPABASE_URL || env.SUPABASE_URL;
-  const supabaseKey = env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY;
+  // Safe fallbacks guarantee Cloudflare Functions never crash with 500 Invalid URL
+  const supabaseUrl = env?.VITE_SUPABASE_URL || env?.SUPABASE_URL || 'https://fftkjikbkewirsfoqwen.supabase.co';
+  const supabaseKey = env?.VITE_SUPABASE_ANON_KEY || env?.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmdGtqaWtia2V3aXJzZm9xd2VuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MjI4OTAsImV4cCI6MjEwMDk5ODg5MH0.JYKtKniX5bZm9Q279ep_NXpS8cs2MGPVbC0B5n4GNoA';
 
   const url = new URL(request.url);
-  const baseUrl = `${url.protocol}//${url.host}`;
+  // Ensure canonical production HTTPS domain for Googlebot
+  const baseUrl = (url.host.includes('localhost') || url.host.includes('127.0.0.1'))
+    ? `${url.protocol}//${url.host}`
+    : 'https://gallery.aktechstudio.com';
+
   const pageParam = url.searchParams.get('page');
   const typeParam = url.searchParams.get('type'); // 'main' | 'images'
+
+  const headers = {
+    "Content-Type": "application/xml; charset=utf-8",
+    "Cache-Control": "public, max-age=3600, s-maxage=3600",
+    "Access-Control-Allow-Origin": "*"
+  };
+
+  // Handle HEAD requests gracefully for Googlebot pre-fetch check
+  if (request.method === 'HEAD') {
+    return new Response(null, { status: 200, headers });
+  }
 
   // Complete XML character escape helper (fixes xmlParseEntityRef: no name error on & < > ' ")
   const escapeXml = (str) => {
@@ -47,9 +63,8 @@ export async function onRequest(context) {
   const PAGE_SIZE = 50000; // Max allowed per Google Sitemap spec
   let totalImages = 0;
 
-  if (supabaseUrl && supabaseKey) {
-    try {
-      // Get exact count of public images from Supabase
+  try {
+    if (supabaseUrl && supabaseKey) {
       const countRes = await fetch(`${supabaseUrl}/rest/v1/images?is_public=eq.true&select=id`, {
         method: 'HEAD',
         headers: {
@@ -65,9 +80,9 @@ export async function onRequest(context) {
           totalImages = parseInt(parts[1], 10) || 0;
         }
       }
-    } catch (err) {
-      console.error("Failed to query count for sitemap index:", err);
     }
+  } catch (err) {
+    console.error("Count query error in sitemap:", err);
   }
 
   // -------------------------------------------------------------
@@ -78,23 +93,15 @@ export async function onRequest(context) {
     
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
     xml += `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
-    
-    // Main sitemap (static pages & boards)
     xml += `  <sitemap>\n    <loc>${escapeXml(baseUrl)}/sitemap.xml?type=main</loc>\n  </sitemap>\n`;
     
-    // Image sitemap chunks (up to 50,000 images per sub-file)
     for (let p = 1; p <= totalChunks; p++) {
       xml += `  <sitemap>\n    <loc>${escapeXml(baseUrl)}/sitemap.xml?type=images&amp;page=${p}</loc>\n  </sitemap>\n`;
     }
     
     xml += `</sitemapindex>`;
 
-    return new Response(xml, {
-      headers: {
-        "Content-Type": "application/xml;charset=UTF-8",
-        "Cache-Control": "public, max-age=3600, s-maxage=3600"
-      }
-    });
+    return new Response(xml, { status: 200, headers });
   }
 
   // -------------------------------------------------------------
@@ -102,15 +109,15 @@ export async function onRequest(context) {
   // -------------------------------------------------------------
   if (typeParam === 'main') {
     let boards = [];
-    if (supabaseUrl && supabaseKey) {
-      try {
+    try {
+      if (supabaseUrl && supabaseKey) {
         const boardsRes = await fetch(`${supabaseUrl}/rest/v1/boards?is_public=eq.true&select=id,name&limit=5000`, {
           headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
         });
         if (boardsRes.ok) boards = await boardsRes.json();
-      } catch (err) {
-        console.error("Failed to fetch boards for main sitemap:", err);
       }
+    } catch (err) {
+      console.error("Fetch boards error in sitemap:", err);
     }
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
@@ -127,12 +134,7 @@ export async function onRequest(context) {
     }
     xml += `</urlset>`;
 
-    return new Response(xml, {
-      headers: {
-        "Content-Type": "application/xml;charset=UTF-8",
-        "Cache-Control": "public, max-age=3600, s-maxage=3600"
-      }
-    });
+    return new Response(xml, { status: 200, headers });
   }
 
   // -------------------------------------------------------------
@@ -144,9 +146,8 @@ export async function onRequest(context) {
   const from = (pageNum - 1) * PAGE_SIZE;
   const to = pageNum * PAGE_SIZE - 1;
 
-  if (supabaseUrl && supabaseKey) {
-    try {
-      // Include boards on page 1 / single file mode
+  try {
+    if (supabaseUrl && supabaseKey) {
       if (pageNum === 1 && !typeParam) {
         const boardsRes = await fetch(`${supabaseUrl}/rest/v1/boards?is_public=eq.true&select=id,name&limit=5000`, {
           headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
@@ -154,7 +155,6 @@ export async function onRequest(context) {
         if (boardsRes.ok) boards = await boardsRes.json();
       }
 
-      // Fetch images for target range (up to 50,000 per page)
       const imagesRes = await fetch(`${supabaseUrl}/rest/v1/images?is_public=eq.true&select=id,title,description,drive_file_id,drive_view_link&order=created_at.desc`, {
         headers: {
           apikey: supabaseKey,
@@ -163,16 +163,15 @@ export async function onRequest(context) {
         }
       });
       if (imagesRes.ok) images = await imagesRes.json();
-    } catch (err) {
-      console.error("Failed to fetch images for sitemap chunk:", err);
     }
+  } catch (err) {
+    console.error("Fetch images error in sitemap:", err);
   }
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
   xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n`;
   xml += `        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n`;
 
-  // Include static pages and boards on single sitemap mode or page 1
   if (pageNum === 1 && !typeParam) {
     xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
     xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/about</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
@@ -208,10 +207,5 @@ export async function onRequest(context) {
 
   xml += `</urlset>`;
 
-  return new Response(xml, {
-    headers: {
-      "Content-Type": "application/xml;charset=UTF-8",
-      "Cache-Control": "public, max-age=3600, s-maxage=3600"
-    }
-  });
+  return new Response(xml, { status: 200, headers });
 }
