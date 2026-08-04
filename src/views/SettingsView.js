@@ -113,6 +113,19 @@ export const SettingsView = {
     const currentChannelName = profile.channel_name || profile.display_name || (window.appState.currentUser?.displayName || '');
     const currentBio = profile.channel_bio || '';
 
+    // Calculate 30-day username change cooldown
+    let isCooldownActive = false;
+    let daysRemaining = 0;
+    if (currentUsername && profile.username_last_changed_at) {
+      const lastChanged = new Date(profile.username_last_changed_at);
+      const msPassed = new Date() - lastChanged;
+      const daysPassed = Math.floor(msPassed / (1000 * 60 * 60 * 24));
+      if (daysPassed < 30) {
+        isCooldownActive = true;
+        daysRemaining = 30 - daysPassed;
+      }
+    }
+
     return `
       <div style="max-width: 100%; box-sizing: border-box; min-width: 0;">
         <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
@@ -132,7 +145,7 @@ export const SettingsView = {
         </div>
 
         ${isCreator ? `
-          <div style="margin-bottom: 24px; padding: 14px 16px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; max-width: 100%; box-sizing: border-box;">
+          <div style="margin-bottom: 20px; padding: 14px 16px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; max-width: 100%; box-sizing: border-box;">
             <div style="flex: 1; min-width: 0; max-width: 100%; overflow-wrap: break-word; word-break: break-word;">
               <div style="font-weight: 700; color: #22c55e; font-size: 0.9rem;">Your Public Creator Handle & URL is Live</div>
               <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; overflow-wrap: anywhere; word-break: break-all;">
@@ -146,6 +159,15 @@ export const SettingsView = {
           </div>
         ` : ''}
 
+        ${isCooldownActive ? `
+          <div style="margin-bottom: 20px; padding: 12px 16px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-md); font-size: 0.82rem; color: #fbbf24; display: flex; align-items: center; gap: 10px;">
+            <span class="material-icons-outlined" style="font-size: 1.3rem; flex-shrink: 0;">lock_clock</span>
+            <div>
+              <strong style="color: #fbbf24; font-size: 0.85rem;">Username Cooldown Active:</strong> Your handle <strong>@${currentUsername}</strong> was updated recently. You can change your username again in <strong>${daysRemaining} day(s)</strong>. Usernames can only be changed once every 30 days.
+            </div>
+          </div>
+        ` : ''}
+
         <form id="creator-channel-form" style="max-width: 100%; box-sizing: border-box;">
           <div class="form-group" style="margin-bottom: 20px; max-width: 100%; box-sizing: border-box;">
             <label class="form-label" for="channel-username-input" style="font-weight: 700; font-size: 0.9rem;">
@@ -153,10 +175,13 @@ export const SettingsView = {
             </label>
             <div style="position: relative; width: 100%; box-sizing: border-box;">
               <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 700; color: var(--text-muted); user-select: none;">@</span>
-              <input type="text" id="channel-username-input" class="form-control" style="padding-left: 32px; width: 100%; box-sizing: border-box;" placeholder="e.g. ashish_studio" value="${currentUsername}" required maxlength="30" pattern="[a-z0-9_]+" autocomplete="off">
+              <input type="text" id="channel-username-input" class="form-control" style="padding-left: 32px; width: 100%; box-sizing: border-box; ${isCooldownActive ? 'opacity: 0.7; cursor: not-allowed;' : ''}" placeholder="e.g. ashish_studio" value="${currentUsername}" required maxlength="30" pattern="[a-z0-9_]+" autocomplete="off" ${isCooldownActive ? 'disabled readonly' : ''}>
             </div>
             <div id="username-status-msg" style="font-size: 0.75rem; margin-top: 6px; color: var(--text-secondary); word-break: break-word; overflow-wrap: break-word;">
-              Lowercase letters, numbers, and underscores only (3-30 characters). URL: /u/@handle
+              ${isCooldownActive 
+                ? `<span style="color: #fbbf24; font-weight: 600;">🔒 Username locked for ${daysRemaining} more day(s) (allowed once every 30 days).</span>` 
+                : 'Lowercase letters, numbers, and underscores only (3-30 characters). URL: /u/@handle'
+              }
             </div>
           </div>
 
@@ -616,17 +641,44 @@ export const SettingsView = {
             const supabase = await getSupabase();
             const currentUser = window.appState.currentUser;
 
+            const existingUsername = (window.appState.currentUserProfile?.username || '').toLowerCase();
+            const isUsernameChanging = cleanUsername !== existingUsername;
+            
+            const updatePayload = {
+              username: cleanUsername,
+              channel_name: channelName,
+              channel_bio: channelBio,
+              is_creator: true
+            };
+
+            if (isUsernameChanging || !window.appState.currentUserProfile?.username_last_changed_at) {
+              updatePayload.username_last_changed_at = new Date().toISOString();
+            }
+
             // Update user profile in Supabase table
-            const { data: updatedUsers, error: updateErr } = await supabase
+            let updatedUsers = null;
+            let updateErr = null;
+
+            const res = await supabase
               .from('users')
-              .update({
-                username: cleanUsername,
-                channel_name: channelName,
-                channel_bio: channelBio,
-                is_creator: true
-              })
+              .update(updatePayload)
               .eq('id', currentUser.uid)
               .select();
+
+            updatedUsers = res.data;
+            updateErr = res.error;
+
+            if (updateErr && updateErr.message && updateErr.message.includes('username_last_changed_at')) {
+              // Retry without username_last_changed_at if column missing on old DB schema
+              delete updatePayload.username_last_changed_at;
+              const res2 = await supabase
+                .from('users')
+                .update(updatePayload)
+                .eq('id', currentUser.uid)
+                .select();
+              updatedUsers = res2.data;
+              updateErr = res2.error;
+            }
 
             if (updateErr) throw updateErr;
 

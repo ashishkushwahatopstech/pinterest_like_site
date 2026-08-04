@@ -15,6 +15,7 @@ create table public.users (
   channel_name text,    -- Creator channel display name
   channel_bio text,     -- Creator channel description
   is_creator boolean default false not null, -- Gate for creating boards & uploading images
+  username_last_changed_at timestamp with time zone, -- 30-day cooldown tracking for username edits
   is_admin boolean default false,
   is_suspended boolean default false,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null

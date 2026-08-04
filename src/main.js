@@ -1084,7 +1084,13 @@ async function route() {
     const userSegment = path.split('/')[1];
     await ProfileView.render({ username: userSegment });
   } else if (path === 'profile') {
-    await ProfileView.render();
+    const userHandle = window.appState.currentUserProfile?.username;
+    if (userHandle) {
+      window.history.replaceState({}, '', `/u/${userHandle}`);
+      await ProfileView.render({ username: userHandle });
+    } else {
+      await ProfileView.render();
+    }
   } else if (path === 'settings') {
     await SettingsView.render();
   } else if (path === 'admin') {

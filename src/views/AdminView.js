@@ -470,13 +470,18 @@ export const AdminView = {
       <tr id="user-row-${u.id}">
         <td>
           <div style="display: flex; align-items: center; gap: 12px;">
-            <img src="${u.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" alt="${u.display_name || 'Creator'} Avatar" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+            <img src="${u.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" alt="${u.display_name || 'Creator'} Avatar" style="width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border-color);">
             <div>
-              <div style="font-weight: 600; display: flex; align-items: center; gap: 6px; color: var(--text-primary);">
-                <span>${u.display_name || 'Creator'}</span>
+              <div style="font-weight: 600; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; color: var(--text-primary);">
+                <span>${u.display_name || u.channel_name || 'Creator'}</span>
+                ${u.username ? `
+                  <span class="btn-glass" style="padding: 1px 7px; font-size: 0.7rem; border-radius: var(--radius-full); font-weight: 700; color: var(--accent-primary); border: 1px solid rgba(255,51,102,0.3); background: rgba(255,51,102,0.1);">
+                    @${u.username}
+                  </span>
+                ` : ''}
                 ${u.is_admin ? `<span class="material-icons-outlined" style="font-size: 1rem; color: var(--accent-primary);" title="Admin Access">verified_user</span>` : ''}
               </div>
-              <div style="font-size: 0.75rem; color: var(--text-secondary);">${u.email}</div>
+              <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">${u.email}</div>
             </div>
           </div>
         </td>
@@ -518,12 +523,6 @@ export const AdminView = {
           <td>
             <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; color: var(--text-primary);">${img.title}</div>
             <div style="font-size: 0.75rem; color: var(--text-muted);">Board: ${img.boards?.name || 'Unassigned'}</div>
-            <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px;">
-              <span style="display: inline-flex; align-items: center; gap: 2px; margin-right: 8px;"><span class="material-icons-outlined" style="font-size: 0.8rem; vertical-align: middle;">visibility</span> ${img.views_count || 0}</span>
-              <span style="display: inline-flex; align-items: center; gap: 2px;"><span class="material-icons-outlined" style="font-size: 0.8rem; vertical-align: middle; color: #ff3366;">favorite</span> ${img.likes_count || 0}</span>
-            </div>
-          </td>
-          <td>
             <div style="font-size: 0.8rem; font-weight: 500; color: var(--text-secondary);">${img.users?.display_name || 'Anonymous'}</div>
           </td>
           <td>
@@ -676,7 +675,9 @@ export const AdminView = {
         const query = userSearchInput.value.toLowerCase();
         const filtered = this.users.filter(u => 
           u.display_name?.toLowerCase().includes(query) || 
-          u.email?.toLowerCase().includes(query)
+          u.email?.toLowerCase().includes(query) ||
+          u.username?.toLowerCase().includes(query) ||
+          u.channel_name?.toLowerCase().includes(query)
         );
         const rowsContainer = document.getElementById('admin-user-rows');
         if (rowsContainer) {
