@@ -383,19 +383,50 @@ export const HomeView = {
                   
                   ${(() => {
                     const trendingIds = this.getTrendingBoardIds();
-                    return this.boards.map(b => {
-                      const isTrending = trendingIds.includes(b.id);
-                      return `
-                        <div class="dropdown-option ${this.selectedBoardId === b.id ? 'selected' : ''}" data-value="${b.id}" style="padding-left: 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
-                          <span>${b.name}</span>
-                          ${isTrending ? `
-                            <svg style="width: 16px; height: 16px; fill: #ff3366; flex-shrink: 0;" viewBox="0 0 24 24" title="Trending">
-                              <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/>
-                            </svg>
-                          ` : ''}
+                    const trendingBoards = this.boards.filter(b => trendingIds.includes(b.id));
+                    
+                    let html = '';
+
+                    // 1. Dedicated Trending Collections Section at top
+                    if (trendingBoards.length > 0) {
+                      html += `
+                        <div style="padding: 8px 16px 4px 16px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #ff3366; letter-spacing: 0.5px; display: flex; align-items: center; gap: 4px; border-top: 1px solid var(--border-color); margin-top: 4px;">
+                          <span class="material-icons-outlined" style="font-size: 0.9rem;">local_fire_department</span>
+                          <span>Trending Collections</span>
                         </div>
                       `;
-                    }).join('');
+                      html += trendingBoards.map(b => `
+                        <div class="dropdown-option ${this.selectedBoardId === b.id ? 'selected' : ''}" data-value="${b.id}" style="padding-left: 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+                          <span style="font-weight: 600;">${b.name}</span>
+                          <span style="background: rgba(255, 51, 102, 0.15); color: #ff3366; border: 1px solid rgba(255, 51, 102, 0.3); padding: 2px 6px; border-radius: var(--radius-sm); font-size: 0.65rem; font-weight: 700; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0;">
+                            <span class="material-icons-outlined" style="font-size: 0.75rem;">whatshot</span>
+                            <span>Trending</span>
+                          </span>
+                        </div>
+                      `).join('');
+                    }
+
+                    // 2. All Collections Section
+                    if (this.boards.length > 0) {
+                      html += `
+                        <div style="padding: 8px 16px 4px 16px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; border-top: 1px solid var(--border-color); margin-top: 4px;">
+                          <span>All Collections (${this.boards.length})</span>
+                        </div>
+                      `;
+                      html += this.boards.map(b => {
+                        const isTrending = trendingIds.includes(b.id);
+                        return `
+                          <div class="dropdown-option ${this.selectedBoardId === b.id ? 'selected' : ''}" data-value="${b.id}" style="padding-left: 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+                            <span>${b.name}</span>
+                            ${isTrending ? `
+                              <span class="material-icons-outlined" style="font-size: 0.95rem; color: #ff3366;" title="Trending Collection">local_fire_department</span>
+                            ` : ''}
+                          </div>
+                        `;
+                      }).join('');
+                    }
+
+                    return html;
                   })()}
                 </div>
               </div>
