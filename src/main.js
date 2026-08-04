@@ -434,11 +434,18 @@ const openLightboxOverlay = async (imageId) => {
     const isAdmin = window.appState?.isAdmin;
     const supabase = user ? await getSupabase() : supabasePublic;
 
-    const { data, error } = await supabase
-      .from('images')
-      .select('*, users!images_user_id_fkey(*), boards(*)')
-      .eq('id', imageId)
-      .single();
+    let imageQuery = supabase.from('images').select('*, users!images_user_id_fkey(*), boards(*)');
+    if (imageId.length === 36) {
+      imageQuery = imageQuery.eq('id', imageId);
+    } else {
+      const rawMin = imageId.padEnd(8, '0');
+      const minUuid = rawMin.slice(0,8) + '-0000-0000-0000-000000000000';
+      const rawMax = imageId.padEnd(8, 'f');
+      const maxUuid = rawMax.slice(0,8) + '-ffff-ffff-ffff-ffffffffffff';
+      imageQuery = imageQuery.gte('id', minUuid).lte('id', maxUuid);
+    }
+    const { data: imgList, error } = await imageQuery;
+    const data = imgList && imgList.length > 0 ? imgList[0] : null;
 
     if (error || !data) return;
 

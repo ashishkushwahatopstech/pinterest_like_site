@@ -129,7 +129,8 @@ export async function onRequest(context) {
 
     for (const b of boards) {
       if (!b.name || !b.id) continue;
-      const boardUrl = `${baseUrl}/board/${slugify(b.name)}--${b.id}`;
+      const boardShortId = b.id.substring(0, 6);
+      const boardUrl = `${baseUrl}/board/${slugify(b.name)}--${boardShortId}`;
       xml += `  <url>\n    <loc>${escapeXml(boardUrl)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
     }
     xml += `</urlset>`;
@@ -180,14 +181,16 @@ export async function onRequest(context) {
 
     for (const b of boards) {
       if (!b.name || !b.id) continue;
-      const boardUrl = `${baseUrl}/board/${slugify(b.name)}--${b.id}`;
+      const boardShortId = b.id.substring(0, 6);
+      const boardUrl = `${baseUrl}/board/${slugify(b.name)}--${boardShortId}`;
       xml += `  <url>\n    <loc>${escapeXml(boardUrl)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
     }
   }
 
   for (const img of images) {
     if (!img.id) continue;
-    const pinUrl = `${baseUrl}/pin/${slugify(img.title)}--${img.id}`;
+    const pinShortId = img.id.substring(0, 8);
+    const pinUrl = `${baseUrl}/pin/${slugify(img.title)}--${pinShortId}`;
     const rawUrl = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
     const titleText = img.title || 'Discovery Image';
     const rawDesc = cleanDescriptionText(img.description);

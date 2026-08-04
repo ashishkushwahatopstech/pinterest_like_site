@@ -60,7 +60,7 @@ export const BoardView = {
       window.appState.updateSEO(`Collection: ${this.board.name}`, `Browse the ${this.board.name} board backups, shared pins, and beautiful galleries on the PinGrid network.`);
     }
 
-    await this.fetchBoardImages(boardId);
+    await this.fetchBoardImages(this.board.id);
     this.renderContent();
   },
 
@@ -70,7 +70,17 @@ export const BoardView = {
       const isAdmin = window.appState?.isAdmin;
       const supabase = user ? await getSupabase() : supabasePublic;
       
-      const { data, error } = await supabase.from('boards').select('*, users(*)').eq('id', boardId);
+      let boardQuery = supabase.from('boards').select('*, users(*)');
+      if (boardId.length === 36) {
+        boardQuery = boardQuery.eq('id', boardId);
+      } else {
+        const rawMin = boardId.padEnd(8, '0');
+        const minUuid = rawMin.slice(0,8) + '-0000-0000-0000-000000000000';
+        const rawMax = boardId.padEnd(8, 'f');
+        const maxUuid = rawMax.slice(0,8) + '-ffff-ffff-ffff-ffffffffffff';
+        boardQuery = boardQuery.gte('id', minUuid).lte('id', maxUuid);
+      }
+      const { data, error } = await boardQuery;
       if (error || !data || data.length === 0) {
         this.board = null;
         return;
@@ -242,7 +252,7 @@ export const BoardView = {
           const imgObj = this.images.find(img => img.id === pinId);
           const slug = imgObj ? window.appState.slugify(imgObj.title) : 'pin';
           sessionStorage.setItem('lightbox_referrer', window.location.pathname + window.location.search);
-          window.appState.navigate(`/pin/${slug}--${pinId}`);
+          window.appState.navigate(`/pin/${slug}--${pinId.substring(0, 8)}`);
         },
         async (pinId, likeBtn) => {
           if (window.appState && window.appState.toggleLike) {
