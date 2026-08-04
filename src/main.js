@@ -1175,7 +1175,8 @@ const initApp = async () => {
 
         const dbUser = data?.[0] || null;
         window.appState.currentUserProfile = dbUser;
-        window.appState.isCreator = !!dbUser?.is_creator;
+        // If column is_creator is not yet created in Supabase DB, default to true so users are not blocked
+        window.appState.isCreator = dbUser && dbUser.is_creator !== undefined ? !!dbUser.is_creator : true;
 
         // Fetch user's liked image IDs for unfilled/filled like button status
         try {

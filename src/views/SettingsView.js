@@ -547,8 +547,16 @@ export const SettingsView = {
             this.renderContent();
           } catch (err) {
             console.error("Failed to save Creator Channel:", err);
-            alert("Failed to save Creator Channel: " + err.message);
+            if (err.message && (err.message.includes('column') || err.message.includes('does not exist'))) {
+              alert("⚠️ Supabase SQL Migration Required:\n\nPlease run the following 1-line SQL command in your Supabase Dashboard -> SQL Editor:\n\nALTER TABLE public.users ADD COLUMN IF NOT EXISTS username text UNIQUE, ADD COLUMN IF NOT EXISTS channel_name text, ADD COLUMN IF NOT EXISTS channel_bio text, ADD COLUMN IF NOT EXISTS is_creator boolean DEFAULT false NOT NULL;");
+            } else {
+              alert("Failed to save Creator Channel: " + err.message);
+            }
             saveBtn.disabled = false;
+            saveBtn.innerHTML = `
+              <span class="material-icons-outlined">rocket_launch</span>
+              <span>Launch Creator Channel & Unlock Uploads</span>
+            `;
           }
         };
       }
