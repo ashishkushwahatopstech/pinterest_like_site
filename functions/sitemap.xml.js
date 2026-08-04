@@ -16,7 +16,7 @@ export async function onRequest(context) {
 
   const headers = {
     "Content-Type": "application/xml; charset=utf-8",
-    "Cache-Control": "public, max-age=3600, s-maxage=3600",
+    "Cache-Control": "no-cache, no-store, must-revalidate",
     "Access-Control-Allow-Origin": "*"
   };
 
@@ -124,18 +124,20 @@ export async function onRequest(context) {
       console.error("Fetch boards error in sitemap:", err);
     }
 
+    const today = new Date().toISOString().split('T')[0];
+
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
     xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
-    xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
-    xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/about</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
-    xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/privacy</loc>\n    <changefreq>yearly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
-    xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/terms</loc>\n    <changefreq>yearly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
+    xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
+    xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/about</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+    xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/privacy</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>yearly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
+    xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/terms</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>yearly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
 
     for (const b of boards) {
       if (!b.name || !b.id) continue;
       const boardShortId = b.id.substring(0, 6);
       const boardUrl = `${baseUrl}/board/${slugify(b.name)}--${boardShortId}`;
-      xml += `  <url>\n    <loc>${escapeXml(boardUrl)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+      xml += `  <url>\n    <loc>${escapeXml(boardUrl)}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
     }
     xml += `</urlset>`;
 
@@ -176,8 +178,7 @@ export async function onRequest(context) {
   const today = new Date().toISOString().split('T')[0];
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-  xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n`;
-  xml += `        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n`;
+  xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
 
   if (pageNum === 1 && !typeParam) {
     xml += `  <url>\n    <loc>${escapeXml(baseUrl)}/</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
@@ -197,7 +198,6 @@ export async function onRequest(context) {
     if (!img.id) continue;
     const pinShortId = img.id.substring(0, 8);
     const pinUrl = `${baseUrl}/pin/${slugify(img.title)}--${pinShortId}`;
-    const rawUrl = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
     const dateStr = img.created_at ? new Date(img.created_at).toISOString().split('T')[0] : today;
 
     xml += `  <url>\n`;
@@ -205,11 +205,6 @@ export async function onRequest(context) {
     xml += `    <lastmod>${dateStr}</lastmod>\n`;
     xml += `    <changefreq>monthly</changefreq>\n`;
     xml += `    <priority>0.6</priority>\n`;
-    if (rawUrl && (rawUrl.startsWith('http://') || rawUrl.startsWith('https://'))) {
-      xml += `    <image:image>\n`;
-      xml += `      <image:loc>${escapeXml(rawUrl)}</image:loc>\n`;
-      xml += `    </image:image>\n`;
-    }
     xml += `  </url>\n`;
   }
 
