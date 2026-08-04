@@ -43,7 +43,26 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
         
         <!-- Main Detail Card -->
         <div class="lightbox-main-card glass animate-fade">
-          <div class="lightbox-content-wrapper" style="position: relative; background: rgba(255,255,255,0.02); min-height: 200px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md) 0 0 var(--radius-md); overflow: hidden;">
+          <!-- Detail Breadcrumb Navigation Bar (Positioned BEFORE Image) -->
+          <div class="lightbox-breadcrumb-header" style="padding: 16px 20px 12px 20px; font-size: 0.8rem; width: 100%; box-sizing: border-box; border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.15); border-radius: var(--radius-lg) var(--radius-lg) 0 0;">
+            ${(() => {
+              const referrer = sessionStorage.getItem('lightbox_referrer') || sessionStorage.getItem('pin_restore_referrer') || '';
+              const isFromProfile = referrer.includes('/profile') || (currentUser && currentUser.uid === img.user_id);
+              
+              const items = [{ label: 'Home', url: '/', icon: 'home' }];
+              if (isFromProfile) {
+                items.push({ label: 'My Profile', url: '/profile', icon: 'person' });
+              }
+              if (img.boards) {
+                const bUrl = window.appState?.getBoardUrl ? window.appState.getBoardUrl(img.boards) : '/';
+                items.push({ label: img.boards.name, url: bUrl, icon: 'folder' });
+              }
+              items.push({ label: img.title });
+              return renderBreadcrumb(items);
+            })()}
+          </div>
+
+          <div class="lightbox-content-wrapper" style="position: relative; background: rgba(255,255,255,0.02); min-height: 200px; display: flex; align-items: center; justify-content: center; border-radius: 0; overflow: hidden;">
             <!-- Skeleton loader that displays while loading -->
             <div class="skeleton lightbox-image-skeleton" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1;"></div>
             <img class="lightbox-image" src="${imageUrl}" alt="${img.title}" decoding="async" style="opacity: 0; transition: opacity 0.3s ease; z-index: 2;" onload="this.style.opacity='1'; const sk = this.previousElementSibling; if(sk) sk.style.display='none';">
@@ -52,45 +71,36 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
             </button>
           </div>
           
-          <div class="lightbox-details animate-slide-up" style="background: var(--bg-secondary); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; border-left: 1px solid var(--border-color); padding: 32px; box-shadow: var(--shadow-md); display: flex; flex-direction: column; justify-content: space-between; overflow-y: auto;">
+          <div class="lightbox-details animate-slide-up" style="background: var(--bg-secondary); border-radius: 0 0 var(--radius-lg) var(--radius-lg); border-left: none; padding: 28px; box-shadow: var(--shadow-md); display: flex; flex-direction: column; justify-content: space-between; overflow-y: auto;">
             <div>
               <!-- Static Details Section -->
               <div id="lightbox-static-details">
-                <div id="lightbox-title-container" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; width: 100%;">
-                  <h2 class="lightbox-title mobile-truncate" id="lightbox-title-display" style="color: var(--text-primary); font-family: var(--font-heading); font-size: 1.25rem; font-weight: 700; margin: 0; word-break: break-word; line-height: 1.3;">${img.title}</h2>
-                  <div style="display: flex; align-items: center; gap: 12px;">
-                    <!-- Like Button (Always visible) -->
-                    <button class="btn ${isLiked ? 'btn-primary liked' : 'btn-secondary'} btn-icon btn-like" data-id="${img.id}" style="border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s ease;" aria-label="Like image" title="${isLiked ? 'Unlike' : 'Like'}">
-                      <span class="material-icons-outlined" style="${isLiked ? 'color: #ffffff;' : 'color: var(--text-secondary);'} font-size: 1.25rem;">${isLiked ? 'favorite' : 'favorite_border'}</span>
-                    </button>
-                    
-                    ${isOwner || isAdmin ? `
-                      <button id="lightbox-edit-btn" class="btn btn-glass btn-sm" style="padding: 6px 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer; background: var(--bg-primary);">
-                        <span class="material-icons-outlined" style="font-size: 0.95rem;">edit</span>
-                        <span>Edit</span>
+                <!-- Title Container: 100% full width below image -->
+                <div id="lightbox-title-container" style="width: 100%; margin-bottom: 16px;">
+                  <h2 class="lightbox-title mobile-truncate" id="lightbox-title-display" style="width: 100%; color: var(--text-primary); font-family: var(--font-heading); font-size: 1.35rem; font-weight: 700; margin: 0 0 12px 0; word-break: break-word; line-height: 1.35; display: block;">${img.title}</h2>
+                  
+                  <!-- Actions & Expand Button Row (Below Title) -->
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <!-- Like Button (Always visible) -->
+                      <button class="btn ${isLiked ? 'btn-primary liked' : 'btn-secondary'} btn-icon btn-like" data-id="${img.id}" style="border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s ease;" aria-label="Like image" title="${isLiked ? 'Unlike' : 'Like'}">
+                        <span class="material-icons-outlined" style="${isLiked ? 'color: #ffffff;' : 'color: var(--text-secondary);'} font-size: 1.25rem;">${isLiked ? 'favorite' : 'favorite_border'}</span>
                       </button>
-                    ` : ''}
-                    <span class="material-icons-outlined" id="title-expand-icon" style="font-size: 1.8rem; display: none; cursor: pointer; user-select: none;">expand_more</span>
-                  </div>
-                </div>
+                      
+                      ${isOwner || isAdmin ? `
+                        <button id="lightbox-edit-btn" class="btn btn-glass btn-sm" style="padding: 6px 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer; background: var(--bg-primary);">
+                          <span class="material-icons-outlined" style="font-size: 0.95rem;">edit</span>
+                          <span>Edit</span>
+                        </button>
+                      ` : ''}
+                    </div>
 
-                <!-- Detail Breadcrumb Navigation Bar -->
-                <div style="margin-bottom: 12px; font-size: 0.8rem;">
-                  ${(() => {
-                    const referrer = sessionStorage.getItem('lightbox_referrer') || sessionStorage.getItem('pin_restore_referrer') || '';
-                    const isFromProfile = referrer.includes('/profile') || (currentUser && currentUser.uid === img.user_id);
-                    
-                    const items = [{ label: 'Home', url: '/', icon: 'home' }];
-                    if (isFromProfile) {
-                      items.push({ label: 'My Profile', url: '/profile', icon: 'person' });
-                    }
-                    if (img.boards) {
-                      const bUrl = window.appState?.getBoardUrl ? window.appState.getBoardUrl(img.boards) : '/';
-                      items.push({ label: img.boards.name, url: bUrl, icon: 'folder' });
-                    }
-                    items.push({ label: img.title });
-                    return renderBreadcrumb(items);
-                  })()}
+                    <!-- Expand / Collapse Button -->
+                    <button id="title-expand-btn" class="btn btn-glass btn-sm" style="padding: 6px 14px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px; border-radius: var(--radius-full); cursor: pointer; border: 1px solid var(--border-color); color: var(--text-secondary); background: var(--bg-primary);">
+                      <span id="title-expand-label" style="font-weight: 600;">More info</span>
+                      <span class="material-icons-outlined" id="title-expand-icon" style="font-size: 1.2rem;">expand_more</span>
+                    </button>
+                  </div>
                 </div>
 
                 <!-- Always Visible Image Stats Badge Row (Views & Likes System) -->
@@ -389,22 +399,21 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
   }
 
   // Mobile collapsible title triggers
-  if (titleContainer && collapsibleDrawer) {
-    titleContainer.onclick = (e) => {
-      // Don't expand if click was on the like button or edit button
-      if (e.target.closest('.btn-like') || e.target.closest('#lightbox-edit-btn')) {
-        return;
-      }
+  const expandBtn = document.getElementById('title-expand-btn');
+  const expandLabel = document.getElementById('title-expand-label');
 
-      // Toggle expanded drawer
+  if (collapsibleDrawer) {
+    const toggleExpand = (e) => {
+      if (e) e.stopPropagation();
       const isExpanded = collapsibleDrawer.classList.toggle('expanded');
       
-      // Update toggle icon
       if (expandIcon) {
         expandIcon.textContent = isExpanded ? 'expand_less' : 'expand_more';
       }
+      if (expandLabel) {
+        expandLabel.textContent = isExpanded ? 'Less info' : 'More info';
+      }
       
-      // Toggle single-line text truncation
       const titleDisplay = document.getElementById('lightbox-title-display');
       if (titleDisplay) {
         if (isExpanded) {
@@ -414,6 +423,8 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
         }
       }
     };
+
+    if (expandBtn) expandBtn.onclick = toggleExpand;
   }
 
   // Inline edit triggers
