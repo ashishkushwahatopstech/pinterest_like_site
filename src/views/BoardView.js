@@ -250,9 +250,8 @@ export const BoardView = {
         gridEl,
         (pinId) => {
           const imgObj = this.images.find(img => img.id === pinId);
-          const slug = imgObj ? window.appState.slugify(imgObj.title) : 'pin';
           sessionStorage.setItem('lightbox_referrer', window.location.pathname + window.location.search);
-          window.appState.navigate(`/pin/${slug}--${pinId.substring(0, 8)}`);
+          window.appState.navigate(window.appState.getPinUrl(imgObj || pinId));
         },
         async (pinId, likeBtn) => {
           if (window.appState && window.appState.toggleLike) {

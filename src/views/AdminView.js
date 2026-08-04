@@ -506,7 +506,7 @@ export const AdminView = {
       return `
         <tr id="img-row-${img.id}">
           <td>
-            <img src="${thumbUrl}" alt="${img.title} Thumbnail" style="width: 50px; height: 50px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color); cursor: pointer;" onclick="sessionStorage.setItem('lightbox_referrer', '/admin'); window.appState.navigate('/pin/${window.appState.slugify(img.title)}--${img.id.substring(0, 8)}')">
+            <img src="${thumbUrl}" alt="${img.title} Thumbnail" style="width: 50px; height: 50px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color); cursor: pointer;" onclick="sessionStorage.setItem('lightbox_referrer', '/admin'); window.appState.navigate(window.appState.getPinUrl(img))">
           </td>
           <td>
             <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; color: var(--text-primary);">${img.title}</div>

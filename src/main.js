@@ -525,6 +525,12 @@ const openLightboxOverlay = async (imageId) => {
 
     wrapper.innerHTML = renderLightbox(data, window.appState.currentUser, window.appState.isAdmin);
     
+    // Sync browser address bar with short, clean URL (e.g. /pin/michael-jackson-poster-2-666079a2)
+    const shortPinUrl = window.appState.getPinUrl(data);
+    if (window.location.pathname !== shortPinUrl) {
+      window.history.replaceState({}, '', shortPinUrl);
+    }
+
     setupLightboxEvents(data, window.appState.currentUser, window.appState.isAdmin, {
       onLike: async (pinId, likeBtn) => {
         await window.appState.toggleLike(pinId, likeBtn);
@@ -573,8 +579,8 @@ const openLightboxOverlay = async (imageId) => {
         if (error) throw error;
         
         // Update URL to match new title slug!
-        const cleanTitle = window.appState.slugify(newTitle);
-        window.history.replaceState({}, '', `/pin/${cleanTitle}--${imgId}`);
+        const updatedPinUrl = window.appState.getPinUrl({ id: imgId, title: newTitle });
+        window.history.replaceState({}, '', updatedPinUrl);
         
         // Update background card UI titles
         const cardTitleEl = document.querySelector(`.pin-card[data-id="${imgId}"] h4, [data-id="${imgId}"] .pin-bottom-info h4`);
@@ -941,7 +947,64 @@ const slugify = (text) => {
     .replace(/-+/g, '-')      // replace multiple hyphens with single hyphen
     .trim();
 };
+
+const getPinUrl = (img) => {
+  if (!img) return '/';
+  const title = typeof img === 'object' ? (img.title || 'pin') : 'pin';
+  const id = typeof img === 'object' ? img.id : String(img);
+  const titleSlug = slugify(title);
+  const shortId = id ? id.replace(/-/g, '').substring(0, 8) : '';
+  return `/pin/${titleSlug}-${shortId}`;
+};
+
+const getBoardUrl = (board) => {
+  if (!board) return '/';
+  const name = typeof board === 'object' ? (board.name || 'board') : 'board';
+  const id = typeof board === 'object' ? board.id : String(board);
+  const nameSlug = slugify(name);
+  const shortId = id ? id.replace(/-/g, '').substring(0, 8) : '';
+  return `/board/${nameSlug}-${shortId}`;
+};
+
+const parsePinIdFromPath = (path) => {
+  if (!path || !path.startsWith('pin/')) return null;
+  const pinSlug = path.split('/')[1];
+  if (!pinSlug) return null;
+
+  if (pinSlug.includes('--')) {
+    const parts = pinSlug.split('--');
+    return parts[parts.length - 1];
+  }
+
+  const lastHyphenIndex = pinSlug.lastIndexOf('-');
+  if (lastHyphenIndex !== -1) {
+    return pinSlug.substring(lastHyphenIndex + 1);
+  }
+
+  return pinSlug;
+};
+
+const parseBoardIdFromPath = (path) => {
+  if (!path || !path.startsWith('board/')) return null;
+  const boardSlug = path.split('/')[1];
+  if (!boardSlug) return null;
+
+  if (boardSlug.includes('--')) {
+    const parts = boardSlug.split('--');
+    return parts[parts.length - 1];
+  }
+
+  const lastHyphenIndex = boardSlug.lastIndexOf('-');
+  if (lastHyphenIndex !== -1) {
+    return boardSlug.substring(lastHyphenIndex + 1);
+  }
+
+  return boardSlug;
+};
+
 window.appState.slugify = slugify;
+window.appState.getPinUrl = getPinUrl;
+window.appState.getBoardUrl = getBoardUrl;
 window.appState.updateSEO = updateSEOMetadata;
 
 async function route() {
@@ -950,14 +1013,11 @@ async function route() {
   // Close drawer nav
   updateDrawerNav(path);
 
-  // Extract ID from slugified URL structures (e.g. /pin/title--UUID or /board/name--UUID)
+  // Extract ID from slugified URL structures (e.g. /pin/title-shortId or /board/name-shortId)
   let activePinId = query.pin || null;
 
   if (path.startsWith('pin/')) {
-    const pinSlug = path.split('/')[1];
-    if (pinSlug && pinSlug.includes('--')) {
-      activePinId = pinSlug.split('--')[1];
-    }
+    activePinId = parsePinIdFromPath(path);
   }
 
   // Re-render header to reflect the active page and route state
@@ -995,8 +1055,7 @@ async function route() {
     }
     await HomeView.render({ boardId: query.boardId, q: query.q });
   } else if (path.startsWith('board/')) {
-    const boardSlug = path.split('/')[1];
-    const boardId = boardSlug.includes('--') ? boardSlug.split('--')[1] : boardSlug;
+    const boardId = parseBoardIdFromPath(path);
     await BoardView.render({ id: boardId });
   } else if (path === 'profile') {
     await ProfileView.render();

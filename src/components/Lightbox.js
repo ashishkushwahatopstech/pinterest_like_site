@@ -115,7 +115,7 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
                   ${img.boards ? `
                     <div style="margin-bottom: 24px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                       <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Board:</span>
-                      <a href="/board/${img.boards.name.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()}--${img.board_id.substring(0, 6)}" class="btn btn-glass" style="padding: 6px 12px; font-size: 0.8rem; border-radius: var(--radius-sm); color: var(--text-primary); display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border-color);">
+                      <a href="${window.appState.getBoardUrl(img.boards)}" class="btn btn-glass" style="padding: 6px 12px; font-size: 0.8rem; border-radius: var(--radius-sm); color: var(--text-primary); display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border-color);">
                         <span class="material-icons-outlined" style="font-size: 0.95rem;">folder</span>
                         <span>${img.boards.name}</span>
                       </a>
@@ -608,8 +608,7 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
           }
         }
         
-        const cleanTitle = window.appState.slugify(img.title);
-        const shareUrl = `${window.location.origin}/pin/${cleanTitle}--${img.id.substring(0, 8)}`;
+        const shareUrl = `${window.location.origin}${window.appState.getPinUrl(img)}`;
         
         // Use native mobile share sheet API if available
         if (navigator.share) {

@@ -148,7 +148,7 @@ export const HomeView = {
       const count = b.images ? b.images.length : 0;
       
       return `
-        <div class="trending-collection-card glass" style="border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column; cursor: pointer; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);" onclick="event.preventDefault(); window.appState.navigate('/board/${window.appState.slugify(b.name)}--${b.id.substring(0, 6)}')">
+        <div class="trending-collection-card glass" style="border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column; cursor: pointer; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);" onclick="event.preventDefault(); window.appState.navigate(window.appState.getBoardUrl(b))">
           <div style="height: 120px; overflow: hidden; position: relative;">
             <img src="${coverImg}" alt="${b.name} Collection Cover" style="width: 100%; height: 100%; object-fit: cover;" class="collection-cover-img" loading="lazy" decoding="async">
             <span style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.65); color: #fff; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.7rem; font-weight: 600; backdrop-filter: blur(4px);">
@@ -597,9 +597,8 @@ export const HomeView = {
         gridEl,
         (pinId) => {
           const imgObj = this.images.find(img => img.id === pinId);
-          const slug = imgObj ? window.appState.slugify(imgObj.title) : 'pin';
           sessionStorage.setItem('lightbox_referrer', window.location.pathname + window.location.search);
-          window.appState.navigate(`/pin/${slug}--${pinId.substring(0, 8)}`);
+          window.appState.navigate(window.appState.getPinUrl(imgObj || pinId));
         },
         async (pinId, likeBtn) => {
           if (window.appState && window.appState.toggleLike) {
