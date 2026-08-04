@@ -582,84 +582,111 @@ const openLightboxOverlay = async (imageId) => {
       }
     });
 
-    // Fetch related images asynchronously for "More Like This" section
-    (async () => {
-      try {
-        const client = user ? await getSupabase() : supabasePublic;
-        
-        // 1. Primary Query: Try matching same board or public gallery
-        let relatedQuery = client
-          .from('images')
-          .select('*, users!images_user_id_fkey(*), boards(*)')
-          .neq('id', imageId);
+    // 5. Load and display "More Like This" related images asynchronously below the Lightbox detail card
+    loadRelatedImagesForLightbox(data, window.appState.currentUser, window.appState.isAdmin);
 
-        if (data.board_id) {
-          relatedQuery = relatedQuery.eq('board_id', data.board_id);
-        }
-
-        let { data: primaryImages } = await relatedQuery.limit(8);
-
-        let relatedImages = (primaryImages || []).filter(img => {
-          const imgOk = canUserAccessRecord(img, user, isAdmin);
-          const boardOk = !img.boards || canUserAccessRecord(img.boards, user, isAdmin);
-          return imgOk && boardOk;
-        });
-
-        // 2. Fallback Query: Fill up to 8 images with recent public discovery pins if needed
-        if (relatedImages.length < 8) {
-          let { data: fallbackImages } = await supabasePublic
-            .from('images')
-            .select('*, users!images_user_id_fkey(*), boards(*)')
-            .eq('is_public', true)
-            .neq('id', imageId)
-            .order('created_at', { ascending: false })
-            .limit(16);
-
-          if (fallbackImages) {
-            const existingIds = new Set(relatedImages.map(r => r.id));
-            const filteredFallback = fallbackImages.filter(f => !existingIds.has(f.id));
-            const needed = 8 - relatedImages.length;
-            relatedImages = [...relatedImages, ...filteredFallback.slice(0, needed)];
-          }
-        }
-
-        if (relatedImages && relatedImages.length > 0) {
-          // Sort related images based on content similarity and user interests
-          relatedImages = getRelatedRecommendations(data, relatedImages);
-
-          const relatedSection = document.getElementById('lightbox-related-section');
-          const relatedGridContainer = document.getElementById('lightbox-related-grid-container');
-          
-          if (relatedSection && relatedGridContainer) {
-            relatedGridContainer.innerHTML = renderMasonryGrid(relatedImages, false, 'gallery-masonry-grid-related');
-            relatedSection.style.display = 'block';
-
-            const relatedGridEl = document.getElementById('gallery-masonry-grid-related');
-            if (relatedGridEl) {
-              setupGridEvents(
-                relatedGridEl,
-                (pinId) => {
-                  const imgObj = relatedImages.find(img => img.id === pinId);
-                  const slug = imgObj ? window.appState.slugify(imgObj.title) : 'pin';
-                  window.appState.navigate(`/pin/${slug}--${pinId}`);
-
-                  // Scroll to top of the lightbox modal cleanly
-                  const modal = document.getElementById('lightbox-modal');
-                  if (modal) modal.scrollTo({ top: 0, behavior: 'smooth' });
-                },
-                async (pinId, likeBtn) => {
-                  await window.appState.toggleLike(pinId, likeBtn);
-                }
-              );
-            }
-          }
-        }
-      } catch (rErr) {
-        console.warn("Failed to load related images:", rErr);
-      }
-    })();
   } catch (err) {
     console.error("Error opening lightbox:", err);
+  }
+};
+
+/**
+ * Rewritten from scratch: Fetches and displays related images below the lightbox detail view
+ */
+const loadRelatedImagesForLightbox = async (targetImage, user, isAdmin) => {
+  if (!targetImage) return;
+  const relatedSection = document.getElementById('lightbox-related-section');
+  const relatedGridContainer = document.getElementById('lightbox-related-grid-container');
+  if (!relatedSection || !relatedGridContainer) return;
+
+  // Show section immediately with a clean skeleton loader
+  relatedSection.style.display = 'block';
+  relatedGridContainer.innerHTML = `
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; padding: 12px 0;">
+      <div class="skeleton" style="height: 220px; border-radius: var(--radius-md);"></div>
+      <div class="skeleton" style="height: 220px; border-radius: var(--radius-md);"></div>
+      <div class="skeleton" style="height: 220px; border-radius: var(--radius-md);"></div>
+      <div class="skeleton" style="height: 220px; border-radius: var(--radius-md);"></div>
+    </div>
+  `;
+
+  try {
+    const client = user ? await getSupabase() : supabasePublic;
+    const targetId = targetImage.id;
+
+    // Step 1: Query same collection/board images (highest relevance)
+    let boardMatches = [];
+    if (targetImage.board_id) {
+      const { data: bData } = await client
+        .from('images')
+        .select('*, users!images_user_id_fkey(*), boards(*)')
+        .eq('board_id', targetImage.board_id)
+        .neq('id', targetId)
+        .limit(10);
+      boardMatches = bData || [];
+    }
+
+    // Step 2: Query recent public gallery discovery images
+    let generalMatches = [];
+    const { data: gData } = await supabasePublic
+      .from('images')
+      .select('*, users!images_user_id_fkey(*), boards(*)')
+      .eq('is_public', true)
+      .neq('id', targetId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    generalMatches = gData || [];
+
+    // Step 3: Deduplicate candidate pool
+    const combinedMap = new Map();
+    [...boardMatches, ...generalMatches].forEach(img => {
+      if (img && img.id && img.id !== targetId) {
+        combinedMap.set(img.id, img);
+      }
+    });
+
+    // Step 4: Privacy & Authorization filtering
+    const accessibleImages = Array.from(combinedMap.values()).filter(img => {
+      const imgAllowed = canUserAccessRecord(img, user, isAdmin);
+      const boardAllowed = !img.boards || canUserAccessRecord(img.boards, user, isAdmin);
+      return imgAllowed && boardAllowed;
+    });
+
+    if (accessibleImages.length === 0) {
+      relatedSection.style.display = 'none';
+      return;
+    }
+
+    // Step 5: Rank using recommendation engine (content similarity + user interests)
+    const rankedList = getRelatedRecommendations(targetImage, accessibleImages).slice(0, 12);
+
+    // Step 6: Render Masonry Grid
+    relatedGridContainer.innerHTML = renderMasonryGrid(rankedList, false, 'gallery-masonry-grid-related');
+
+    // Step 7: Bind click and like events on the related grid
+    const relatedGridEl = document.getElementById('gallery-masonry-grid-related');
+    if (relatedGridEl) {
+      setupGridEvents(
+        relatedGridEl,
+        (pinId) => {
+          const clickedImg = rankedList.find(i => i.id === pinId);
+          const slug = clickedImg ? window.appState.slugify(clickedImg.title) : 'pin';
+          window.appState.navigate(`/pin/${slug}--${pinId}`);
+
+          // Smooth scroll to top of Lightbox container
+          const scrollContainer = document.querySelector('.lightbox-scroll-container');
+          if (scrollContainer) {
+            scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        },
+        async (pinId, likeBtn) => {
+          await window.appState.toggleLike(pinId, likeBtn);
+        }
+      );
+    }
+  } catch (err) {
+    console.error("Error loading related images:", err);
+    relatedSection.style.display = 'none';
   }
 };
 
