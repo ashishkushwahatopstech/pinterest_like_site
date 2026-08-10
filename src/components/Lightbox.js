@@ -38,11 +38,11 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
         <span class="material-icons-outlined" id="info-toggle-icon" style="font-size: 1.8rem; color: var(--text-primary);">fullscreen</span>
       </button>
       
-      <!-- Scrollable Container -->
-      <div class="lightbox-scroll-container">
+      <!-- Scrollable Container (container_1) -->
+      <div class="container_1 lightbox-scroll-container">
         
-        <!-- Main Detail Card -->
-        <div class="lightbox-main-card glass animate-fade">
+        <!-- Main Detail Card (container_1_1) -->
+        <div class="container_1_1 lightbox-main-card glass animate-fade">
           <div class="lightbox-content-wrapper" style="position: relative; background: var(--bg-secondary); overflow: hidden; width: 100%; box-sizing: border-box;">
             <!-- Skeleton loader that displays while loading -->
             <div class="skeleton lightbox-image-skeleton" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1;"></div>

@@ -627,11 +627,27 @@ body::before {
   display: block;
 }
 
+.container_1,
+.lightbox-scroll-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 767px) {
+  .container_1,
+  .lightbox-scroll-container {
+    padding: 0 8px;
+  }
+}
+
+.container_1_1,
 .lightbox-main-card {
   display: grid;
   grid-template-columns: 1fr;
   width: 100%;
-  max-width: 1200px;
   margin: 0 auto 48px auto;
   box-sizing: border-box;
   border-radius: var(--radius-lg);
@@ -642,22 +658,9 @@ body::before {
 }
 
 @media (min-width: 768px) {
+  .container_1_1,
   .lightbox-main-card {
     grid-template-columns: 1.8fr 1.2fr;
-  }
-}
-
-.lightbox-scroll-container {
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 0 16px;
-  box-sizing: border-box;
-}
-
-@media (max-width: 767px) {
-  .lightbox-scroll-container {
-    padding: 0 8px;
   }
 }
 
