@@ -81,6 +81,13 @@ window.appState = {
   incrementViews: async (pinId) => {
     if (!pinId) return;
     try {
+      // World-class Media Standard: Deduplicate views per session to prevent spam/fake inflation
+      const viewedKey = `viewed_pin_${pinId}`;
+      if (sessionStorage.getItem(viewedKey)) {
+        return null; // Already counted in this session
+      }
+      sessionStorage.setItem(viewedKey, '1');
+
       const supabase = window.appState.currentUser ? await getSupabase() : supabasePublic;
       const { data, error } = await supabase.rpc('increment_views', { image_uuid: pinId });
       if (error) {
