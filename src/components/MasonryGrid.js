@@ -24,6 +24,60 @@ export const renderViewModeSwitcher = (activeMode = 'grid') => {
   `;
 };
 
+export const renderMasonryItemHtml = (img) => {
+  const rawUrl = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
+  const imageUrl = getOptimizedImageUrl(rawUrl, 600);
+  const destUrl = extractDestinationUrl(img.description);
+  const isLiked = window.appState?.userLikesSet ? window.appState.userLikesSet.has(img.id) : (img.is_liked || false);
+  const viewsCount = img.views_count ?? 0;
+  const likesCount = img.likes_count ?? 0;
+  const altText = escapeAttr(img.alt_text || img.title || 'PinGrid image');
+  
+  return `
+    <div class="masonry-item animate-fade" data-id="${img.id}">
+      <div class="pin-card">
+        <div class="pin-image-wrapper">
+          <img src="${imageUrl}" alt="${altText}" loading="lazy" decoding="async">
+        </div>
+        <div class="pin-overlay">
+          <div class="pin-top-actions">
+            ${img.boards ? `
+              <span class="pin-board-badge">${img.boards.name}</span>
+            ` : '<span></span>'}
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="pin-views-badge" title="${viewsCount} views">
+                <span class="material-icons-outlined" style="font-size: 0.85rem; vertical-align: middle;">visibility</span>
+                <span class="views-count-label" style="vertical-align: middle; margin-left: 2px;">${viewsCount}</span>
+              </span>
+              <button class="pin-save-btn btn-like ${isLiked ? 'btn-primary liked' : 'btn-secondary'}" data-id="${img.id}" aria-label="Like image" title="${isLiked ? 'Unlike' : 'Like'}">
+                <span class="material-icons-outlined" style="font-size: 1rem; vertical-align: middle;">${isLiked ? 'favorite' : 'favorite_border'}</span>
+                <span class="likes-count-label" style="vertical-align: middle; margin-left: 2px;">${likesCount}</span>
+              </button>
+            </div>
+          </div>
+          <div class="pin-bottom-info">
+            <h4 class="pin-title">${img.title}</h4>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+              <div class="pin-author">
+                <img src="${img.users?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" class="pin-author-img" alt="${escapeAttr(img.users?.display_name || 'Creator')} Avatar">
+                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px;">
+                  ${img.users?.display_name || 'Anonymous'}
+                </span>
+              </div>
+              ${destUrl ? `
+                <a href="${destUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-glass btn-sm" style="font-size: 0.7rem; padding: 4px 8px; border-radius: var(--radius-full); text-decoration: none; color: #fff; background: var(--accent-gradient); display: inline-flex; align-items: center; gap: 4px; box-shadow: var(--shadow-sm);" onclick="event.stopPropagation();" title="Visit ${destUrl}">
+                  <span class="material-icons-outlined" style="font-size: 0.8rem;">open_in_new</span>
+                  <span>Visit</span>
+                </a>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+};
+
 export const renderMasonryGrid = (images, hasMore = false, gridId = 'gallery-masonry-grid', showLoadMoreButton = false) => {
   if (!images || images.length === 0) {
     return `
@@ -35,59 +89,7 @@ export const renderMasonryGrid = (images, hasMore = false, gridId = 'gallery-mas
     `;
   }
 
-  const itemsHtml = images.map(img => {
-    const rawUrl = img.drive_view_link || `https://lh3.googleusercontent.com/d/${img.drive_file_id}`;
-    const imageUrl = getOptimizedImageUrl(rawUrl, 600);
-    const destUrl = extractDestinationUrl(img.description);
-    const isLiked = window.appState?.userLikesSet ? window.appState.userLikesSet.has(img.id) : (img.is_liked || false);
-    const viewsCount = img.views_count ?? 0;
-    const likesCount = img.likes_count ?? 0;
-    const altText = escapeAttr(img.alt_text || img.title || 'PinGrid image');
-    
-    return `
-      <div class="masonry-item animate-fade" data-id="${img.id}">
-        <div class="pin-card">
-          <div class="pin-image-wrapper">
-            <img src="${imageUrl}" alt="${altText}" loading="lazy" decoding="async">
-          </div>
-          <div class="pin-overlay">
-            <div class="pin-top-actions">
-              ${img.boards ? `
-                <span class="pin-board-badge">${img.boards.name}</span>
-              ` : '<span></span>'}
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span class="pin-views-badge" title="${viewsCount} views">
-                  <span class="material-icons-outlined" style="font-size: 0.85rem; vertical-align: middle;">visibility</span>
-                  <span class="views-count-label" style="vertical-align: middle; margin-left: 2px;">${viewsCount}</span>
-                </span>
-                <button class="pin-save-btn btn-like ${isLiked ? 'btn-primary liked' : 'btn-secondary'}" data-id="${img.id}" aria-label="Like image" title="${isLiked ? 'Unlike' : 'Like'}">
-                  <span class="material-icons-outlined" style="font-size: 1rem; vertical-align: middle;">${isLiked ? 'favorite' : 'favorite_border'}</span>
-                  <span class="likes-count-label" style="vertical-align: middle; margin-left: 2px;">${likesCount}</span>
-                </button>
-              </div>
-            </div>
-            <div class="pin-bottom-info">
-              <h4 class="pin-title">${img.title}</h4>
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
-                <div class="pin-author">
-                  <img src="${img.users?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'}" class="pin-author-img" alt="${escapeAttr(img.users?.display_name || 'Creator')} Avatar">
-                  <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px;">
-                    ${img.users?.display_name || 'Anonymous'}
-                  </span>
-                </div>
-                ${destUrl ? `
-                  <a href="${destUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-glass btn-sm" style="font-size: 0.7rem; padding: 4px 8px; border-radius: var(--radius-full); text-decoration: none; color: #fff; background: var(--accent-gradient); display: inline-flex; align-items: center; gap: 4px; box-shadow: var(--shadow-sm);" onclick="event.stopPropagation();" title="Visit ${destUrl}">
-                    <span class="material-icons-outlined" style="font-size: 0.8rem;">open_in_new</span>
-                    <span>Visit</span>
-                  </a>
-                ` : ''}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
+  const itemsHtml = images.map(img => renderMasonryItemHtml(img)).join('');
 
   return `
     <div class="masonry-grid" id="${gridId}">

@@ -401,8 +401,6 @@ body::before {
   margin-bottom: 16px;
   display: inline-block;
   width: 100%;
-  content-visibility: auto;
-  contain-intrinsic-size: 1px 300px;
 }
 
 /* Pin Gallery Card */
@@ -476,6 +474,7 @@ body::before {
 .pin-image-wrapper {
   position: relative;
   width: 100%;
+  min-height: 180px;
   background: var(--bg-tertiary);
   overflow: hidden;
 }

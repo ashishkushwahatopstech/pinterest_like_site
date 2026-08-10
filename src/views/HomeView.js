@@ -1,6 +1,6 @@
 import { renderBreadcrumb } from '../components/Breadcrumb';
 import { supabasePublic, getSupabase } from '../services/supabase';
-import { renderMasonryGrid, renderListView, renderViewModeSwitcher, setupGridEvents, setupInfiniteScroll } from '../components/MasonryGrid';
+import { renderMasonryGrid, renderMasonryItemHtml, setupGridEvents, setupInfiniteScroll } from '../components/MasonryGrid';
 import { renderPinSkeleton } from '../components/Skeleton';
 import { sortRecommendedFeed, trackUserSearch } from '../services/recommendations';
 import { getOptimizedImageUrl } from '../utils/image';
@@ -16,11 +16,70 @@ export const HomeView = {
   searchQuery: '',
   selectedDateFilter: 'all', // 'all' | 'day' | 'week' | 'month'
   selectedShapeFilter: 'all', // 'all' | 'portrait' | 'landscape' | 'square'
-  viewMode: localStorage.getItem('pingrid_gallery_view_mode') || 'grid',
   page: 0,
   activeFetchId: 0,
   hasMore: false,
   loading: false,
+
+  render: async function(params = {}) {
+    // Read state from URL search parameters (for sharing/deep-linking)
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    if (window.appState.updateSEO) {
+      window.appState.updateSEO("Discover Creative Ideas & Wallpapers", "Explore custom-curated cloud storage image collections, shared pins, and beautiful galleries on the PinGrid network.");
+    }
+    
+    this.images = [];
+    this.boards = [];
+    this.page = 0;
+    this.hasMore = false;
+    this.loading = true;
+    this.selectedBoardId = urlParams.get('boardId') || null;
+    this.searchQuery = urlParams.get('q') || '';
+    this.selectedDateFilter = urlParams.get('date') || 'all';
+    this.selectedShapeFilter = urlParams.get('shape') || 'all';
+
+    const container = document.getElementById(this.containerId);
+    if (!container) return;
+
+    // Render header title and initial layout
+    container.innerHTML = `
+      <section class="hero animate-fade">
+        <h1 id="home-title">Discover Creative Ideas</h1>
+        <p id="home-desc">Explore beautiful collections uploaded by creators around the world, stored securely on their personal cloud drives.</p>
+      </section>
+      
+      <div class="container">
+        <!-- Trending Collections Section -->
+        <div id="trending-collections-tray" style="margin-bottom: 40px; display: none;"></div>
+
+        <!-- Interactive Filter Panel -->
+        <div id="board-filters">
+          <div style="display: flex; gap: 16px; flex-wrap: wrap; width: 100%; align-items: center; margin-bottom: 32px;">
+            <div class="skeleton" style="width: 250px; height: 40px; border-radius: var(--radius-md);"></div>
+            <div class="skeleton" style="width: 120px; height: 40px; border-radius: var(--radius-md);"></div>
+            <div class="skeleton" style="width: 120px; height: 40px; border-radius: var(--radius-md);"></div>
+          </div>
+        </div>
+
+        <!-- Masonry Grid with Skeleton -->
+        <div id="grid-container" class="masonry-container">
+          ${renderPinSkeleton(10)}
+        </div>
+      </div>
+    `;
+
+    // Fetch filters and data
+    await Promise.all([
+      this.fetchPublicBoards(),
+      this.fetchTrendingSettings(),
+      this.fetchImages()
+    ]);
+
+    this.renderFilters();
+    this.renderGrid();
+    this.renderTrendingCollections();
+  },
 
   render: async function(params = {}) {
     // Read state from URL search parameters (for sharing/deep-linking)
@@ -309,9 +368,82 @@ export const HomeView = {
 
   loadMore: async function() {
     if (this.loading || !this.hasMore) return;
+    const prevCount = this.images.length;
     this.page++;
     await this.fetchImages();
-    this.renderGrid();
+    const newItems = this.images.slice(prevCount);
+    if (newItems.length > 0) {
+      this.appendNewItems(newItems);
+    } else {
+      this.renderGrid();
+    }
+  },
+
+  appendNewItems: function(newItems) {
+    const gridEl = document.getElementById('gallery-masonry-grid');
+    if (!gridEl) {
+      this.renderGrid();
+      return;
+    }
+
+    // Generate HTML for new cards ONLY
+    const newHtml = newItems.map(img => renderMasonryItemHtml(img)).join('');
+    gridEl.insertAdjacentHTML('beforeend', newHtml);
+
+    // Bind events for newly appended grid items
+    setupGridEvents(
+      gridEl,
+      (pinId) => {
+        sessionStorage.setItem('pin_restore_scroll', window.scrollY);
+        sessionStorage.setItem('pin_restore_referrer', window.location.pathname + window.location.search);
+        const imgObj = this.images.find(img => img.id === pinId);
+        window.appState.navigate(window.appState.getPinUrl(imgObj || pinId));
+      },
+      async (pinId, likeBtn) => {
+        if (window.appState && window.appState.toggleLike) {
+          await window.appState.toggleLike(pinId, likeBtn);
+        }
+      }
+    );
+
+    // Update bottom sentinel / load more button container without re-rendering grid cards
+    let loadMoreContainer = document.getElementById('load-more-container');
+    let sentinelContainer = document.getElementById('infinite-scroll-sentinel');
+
+    const showButton = this.page >= 2;
+
+    if (this.hasMore) {
+      if (showButton) {
+        if (sentinelContainer) sentinelContainer.remove();
+        if (!loadMoreContainer) {
+          const btnDiv = document.createElement('div');
+          btnDiv.id = 'load-more-container';
+          btnDiv.style.cssText = 'display: flex; justify-content: center; padding: 40px 0; width: 100%;';
+          btnDiv.innerHTML = `
+            <button id="load-more-btn" class="btn btn-primary animate-fade" style="padding: 14px 32px; border-radius: var(--radius-md); font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow-md); cursor: pointer; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);">
+              <span class="material-icons-outlined">expand_more</span>
+              <span>Load More Gallery Images</span>
+            </button>
+          `;
+          gridEl.parentNode.appendChild(btnDiv);
+          const btn = document.getElementById('load-more-btn');
+          if (btn) btn.onclick = () => this.loadMore();
+        }
+      } else {
+        if (loadMoreContainer) loadMoreContainer.remove();
+        if (!sentinelContainer) {
+          const sentDiv = document.createElement('div');
+          sentDiv.id = 'infinite-scroll-sentinel';
+          sentDiv.style.cssText = 'display: flex; justify-content: center; padding: 40px 0; width: 100%;';
+          sentDiv.innerHTML = `<div class="skeleton" style="width: 40px; height: 40px; border-radius: 50%; display: inline-block;"></div>`;
+          gridEl.parentNode.appendChild(sentDiv);
+          setupInfiniteScroll(sentDiv, () => this.loadMore());
+        }
+      }
+    } else {
+      if (loadMoreContainer) loadMoreContainer.remove();
+      if (sentinelContainer) sentinelContainer.remove();
+    }
   },
 
   renderFilters: function() {
@@ -634,31 +766,13 @@ export const HomeView = {
     }
 
     const showButton = this.page >= 2;
-    const switcherHtml = renderViewModeSwitcher(this.viewMode);
-    const galleryHtml = this.viewMode === 'list' 
-      ? renderListView(this.images, this.hasMore, 'gallery-list-view', showButton)
-      : renderMasonryGrid(this.images, this.hasMore, 'gallery-masonry-grid', showButton);
-
-    gridContainer.innerHTML = `${switcherHtml}${galleryHtml}`;
-
-    // Bind View Mode Switcher buttons
-    gridContainer.querySelectorAll('.btn-view-mode').forEach(btn => {
-      btn.onclick = (e) => {
-        e.preventDefault();
-        const mode = btn.dataset.mode;
-        if (mode && mode !== this.viewMode) {
-          this.viewMode = mode;
-          localStorage.setItem('pingrid_gallery_view_mode', mode);
-          this.renderGrid();
-        }
-      };
-    });
+    gridContainer.innerHTML = renderMasonryGrid(this.images, this.hasMore, 'gallery-masonry-grid', showButton);
 
     // Setup Grid event listeners (Clicks & Likes)
-    const activeGalleryEl = document.getElementById(this.viewMode === 'list' ? 'gallery-list-view' : 'gallery-masonry-grid');
-    if (activeGalleryEl) {
+    const gridEl = document.getElementById('gallery-masonry-grid');
+    if (gridEl) {
       setupGridEvents(
-        activeGalleryEl,
+        gridEl,
         (pinId) => {
           sessionStorage.setItem('pin_restore_scroll', window.scrollY);
           sessionStorage.setItem('pin_restore_referrer', window.location.pathname + window.location.search);
