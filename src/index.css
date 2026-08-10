@@ -474,9 +474,10 @@ body::before {
 .pin-image-wrapper {
   position: relative;
   width: 100%;
-  min-height: 180px;
   background: var(--bg-tertiary);
   overflow: hidden;
+  display: block;
+  line-height: 0;
 }
 
 .pin-image-wrapper img {
@@ -600,7 +601,92 @@ body::before {
   color: var(--accent-primary) !important;
 }
 
-@media (max-width: 640px) {
+/* Lightbox Modal Overlay */
+.lightbox {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 300;
+  overflow-y: auto;
+  display: none;
+  padding: 40px 20px;
+}
+
+@media (max-width: 767px) {
+  .lightbox {
+    padding: 68px 10px 24px 10px !important;
+  }
+}
+
+.lightbox.show {
+  display: block;
+}
+
+.lightbox-main-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+}
+
+@media (min-width: 768px) {
+  .lightbox-main-card {
+    grid-template-columns: 2fr 1.1fr;
+  }
+}
+
+.lightbox-content-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--bg-secondary);
+  padding: 0;
+  position: relative;
+  transition: all 0.3s ease;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.lightbox-image {
+  max-width: 100%;
+  max-height: 82vh;
+  object-fit: contain;
+  display: block;
+  transition: all 0.3s ease;
+}
+
+.lightbox-details {
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-color);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 767px) {
+  .lightbox-details {
+    padding: 18px 14px !important;
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+  }
+}@media (max-width: 640px) {
   .breadcrumb-container {
     margin-bottom: 16px !important;
   }
