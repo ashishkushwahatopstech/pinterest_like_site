@@ -257,11 +257,14 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
         </div>
 
         <!-- Related Images Section -->
-        <div class="lightbox-related-section animate-fade" id="lightbox-related-section" style="margin-top: 40px; display: none;">
-          <h3 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700; color: #ffffff; margin-bottom: 24px; display: flex; align-items: center; gap: 8px;">
-            <span class="material-icons-outlined" style="color: var(--accent-primary); font-size: 1.6rem;">auto_awesome</span>
-            <span>More Like This</span>
-          </h3>
+        <div class="lightbox-related-section animate-fade" id="lightbox-related-section" style="margin-top: 48px; width: 100%; box-sizing: border-box;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+            <h3 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 10px;">
+              <span class="material-icons-outlined" style="color: var(--accent-primary); font-size: 1.6rem; background: var(--bg-secondary); padding: 8px; border-radius: 50%; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">auto_awesome</span>
+              <span>More Like This</span>
+            </h3>
+            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">Discover similar gallery recommendations</span>
+          </div>
           <div id="lightbox-related-grid-container" class="masonry-container" style="padding: 0;">
             <!-- Populated asynchronously in main.js -->
           </div>
