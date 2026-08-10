@@ -648,7 +648,6 @@ body::before {
   display: grid;
   grid-template-columns: 1fr;
   width: 100%;
-  max-width: 1200px;
   margin: 0 auto 48px auto;
   box-sizing: border-box;
   border-radius: var(--radius-lg);
