@@ -627,20 +627,12 @@ body::before {
   display: block;
 }
 
-.lightbox-scroll-container {
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 .lightbox-main-card {
   display: grid;
   grid-template-columns: 1fr;
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto 40px auto;
+  max-width: 100%;
+  margin: 0 auto;
   box-sizing: border-box;
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -652,6 +644,20 @@ body::before {
 @media (min-width: 768px) {
   .lightbox-main-card {
     grid-template-columns: 1.8fr 1.2fr;
+  }
+}
+
+.lightbox-scroll-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 767px) {
+  .lightbox-scroll-container {
+    padding: 0 8px;
   }
 }
 
@@ -704,19 +710,16 @@ body::before {
   }
 }
 
-/* Full Screen Width for "More Like This" Section (Separated from detail card) */
+/* Full Width Gallery Cards for "More Like This" Section */
 .lightbox-related-section {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  margin-top: 40px;
-  padding: 0 24px;
-}
-
-@media (max-width: 767px) {
-  .lightbox-related-section {
-    padding: 0 12px;
-  }
+  margin-top: 48px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
 }
 
 #gallery-masonry-grid-related {
