@@ -242,13 +242,15 @@ export const showUploadModal = (boards, onUpload, onTriggerNewBoard) => {
 
   if (!modal) return;
 
-  // Clear selections and queue
+  // Fully reset controls state so consecutive uploads never lock up
   let uploadQueue = [];
   queueContainer.innerHTML = '';
   queueContainer.style.display = 'none';
   submitBtn.disabled = true;
   submitBtn.textContent = 'Upload to Google Drive';
   fileInput.value = '';
+  if (browseBtn) browseBtn.disabled = false;
+  if (dropzone) dropzone.style.pointerEvents = 'auto';
   
   // Populate boards select
   select.innerHTML = boards.map(b => `<option value="${b.id}">${b.name} ${b.is_public ? '(Public)' : '(Private)'}</option>`).join('');
@@ -260,6 +262,14 @@ export const showUploadModal = (boards, onUpload, onTriggerNewBoard) => {
 
   const hideModal = () => {
     modal.classList.remove('show');
+    uploadQueue = [];
+    queueContainer.innerHTML = '';
+    queueContainer.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Upload to Google Drive';
+    fileInput.value = '';
+    if (browseBtn) browseBtn.disabled = false;
+    if (dropzone) dropzone.style.pointerEvents = 'auto';
   };
 
   closeBtn.onclick = hideModal;
@@ -308,7 +318,17 @@ export const showUploadModal = (boards, onUpload, onTriggerNewBoard) => {
       }
 
       const fileId = Math.random().toString(36).substr(2, 9);
-      uploadQueue.push({ id: fileId, file, title: file.name.split('.')[0], progress: 0 });
+      const cleanTitle = file.name.split('.')[0].replace(/[-_]/g, ' ');
+      uploadQueue.push({ 
+        id: fileId, 
+        file, 
+        title: cleanTitle, 
+        altText: cleanTitle,
+        description: '',
+        metaKeywords: '',
+        linkUrl: '',
+        progress: 0 
+      });
     }
 
     renderQueue();
@@ -341,23 +361,29 @@ export const showUploadModal = (boards, onUpload, onTriggerNewBoard) => {
     submitBtn.disabled = false;
 
     queueContainer.innerHTML = uploadQueue.map(item => `
-      <div style="display: flex; flex-direction: column; gap: 6px; padding: 10px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-sm); border: 1px solid var(--border-color);" id="queue-item-${item.id}">
+      <div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: var(--radius-md); border: 1px solid var(--border-color);" id="queue-item-${item.id}">
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
           <div style="flex: 1; min-width: 0;">
-            <div style="font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.file.name}</div>
+            <div style="font-size: 0.85rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary);">${item.file.name}</div>
             <div style="font-size: 0.75rem; color: var(--text-muted);">${(item.file.size / (1024 * 1024)).toFixed(2)} MB</div>
           </div>
-          <button type="button" class="btn-remove-queue" data-id="${item.id}" style="color: #f87171; cursor: pointer;">
-            <span class="material-icons-outlined" style="font-size: 1.1rem;">delete</span>
+          <button type="button" class="btn-remove-queue" data-id="${item.id}" style="color: #f87171; cursor: pointer; background: transparent; border: none; display: flex; align-items: center;" aria-label="Remove item">
+            <span class="material-icons-outlined" style="font-size: 1.2rem;">delete</span>
           </button>
         </div>
         
-        <div style="margin-top: 4px; display: flex; flex-direction: column; gap: 6px;">
-          <div style="display: flex; gap: 8px;">
-            <input type="text" placeholder="Title (optional)" class="form-control" style="padding: 6px 10px; font-size: 0.8rem; border-radius: var(--radius-sm); background: var(--bg-tertiary); flex: 1;" value="${item.title}" id="title-input-${item.id}">
-            <input type="text" placeholder="Description (optional)" class="form-control" style="padding: 6px 10px; font-size: 0.8rem; border-radius: var(--radius-sm); background: var(--bg-tertiary); flex: 1;" value="${item.description || ''}" id="desc-input-${item.id}">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <input type="text" placeholder="Title (required)" class="form-control" style="padding: 8px 10px; font-size: 0.8rem; border-radius: var(--radius-sm); background: var(--bg-tertiary); flex: 1; min-width: 140px;" value="${item.title}" id="title-input-${item.id}" required>
+            <input type="text" placeholder="SEO Alt Text (e.g. Sunset over mountains)" class="form-control" style="padding: 8px 10px; font-size: 0.8rem; border-radius: var(--radius-sm); background: var(--bg-tertiary); flex: 1; min-width: 140px;" value="${item.altText || ''}" id="alt-input-${item.id}">
           </div>
-          <input type="url" placeholder="Destination link e.g. https://yourwebsite.com (optional)" class="form-control" style="padding: 6px 10px; font-size: 0.8rem; border-radius: var(--radius-sm); background: var(--bg-tertiary);" value="${item.linkUrl || ''}" id="link-input-${item.id}">
+
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <input type="text" placeholder="Description (optional)" class="form-control" style="padding: 8px 10px; font-size: 0.8rem; border-radius: var(--radius-sm); background: var(--bg-tertiary); flex: 1; min-width: 140px;" value="${item.description || ''}" id="desc-input-${item.id}">
+            <input type="text" placeholder="SEO Keywords e.g. wallpaper, nature" class="form-control" style="padding: 8px 10px; font-size: 0.8rem; border-radius: var(--radius-sm); background: var(--bg-tertiary); flex: 1; min-width: 140px;" value="${item.metaKeywords || ''}" id="keywords-input-${item.id}">
+          </div>
+
+          <input type="url" placeholder="Destination link e.g. https://yourwebsite.com (optional)" class="form-control" style="padding: 8px 10px; font-size: 0.8rem; border-radius: var(--radius-sm); background: var(--bg-tertiary); width: 100%; box-sizing: border-box;" value="${item.linkUrl || ''}" id="link-input-${item.id}">
         </div>
 
         <div class="progress-bar-container" style="display: none; height: 4px;" id="progress-container-${item.id}">
@@ -379,17 +405,25 @@ export const showUploadModal = (boards, onUpload, onTriggerNewBoard) => {
       };
     });
 
-    // Update title/desc/link bindings on change
+    // Update bindings on input change
     uploadQueue.forEach(item => {
       const titleInput = document.getElementById(`title-input-${item.id}`);
+      const altInput = document.getElementById(`alt-input-${item.id}`);
       const descInput = document.getElementById(`desc-input-${item.id}`);
+      const keywordsInput = document.getElementById(`keywords-input-${item.id}`);
       const linkInput = document.getElementById(`link-input-${item.id}`);
       
       if (titleInput) {
         titleInput.oninput = () => { item.title = titleInput.value; };
       }
+      if (altInput) {
+        altInput.oninput = () => { item.altText = altInput.value; };
+      }
       if (descInput) {
         descInput.oninput = () => { item.description = descInput.value; };
+      }
+      if (keywordsInput) {
+        keywordsInput.oninput = () => { item.metaKeywords = keywordsInput.value; };
       }
       if (linkInput) {
         linkInput.oninput = () => { item.linkUrl = linkInput.value; };
@@ -428,12 +462,21 @@ export const showUploadModal = (boards, onUpload, onTriggerNewBoard) => {
       }
 
       try {
-        await onUpload(boardId, item.file, item.title, item.description, item.linkUrl, (percent) => {
-          if (progBar && progPercent) {
-            progBar.style.width = `${percent}%`;
-            progPercent.textContent = `${percent}%`;
+        await onUpload(
+          boardId, 
+          item.file, 
+          item.title, 
+          item.description, 
+          item.linkUrl, 
+          item.altText, 
+          item.metaKeywords, 
+          (percent) => {
+            if (progBar && progPercent) {
+              progBar.style.width = `${percent}%`;
+              progPercent.textContent = `${percent}%`;
+            }
           }
-        });
+        );
         
         if (progStatus) {
           progStatus.textContent = 'Completed';
@@ -449,9 +492,9 @@ export const showUploadModal = (boards, onUpload, onTriggerNewBoard) => {
       }
     }
 
-    // Success, hide upload modal after 1.5s delay
+    // Success, hide upload modal after 1.2s delay and reset state
     setTimeout(() => {
       hideModal();
-    }, 1500);
+    }, 1200);
   };
 };

@@ -184,7 +184,7 @@ window.appState = {
 
       showUploadModal(
         boards,
-        async (boardId, file, title, description, linkUrl, progressCallback) => {
+        async (boardId, file, title, description, linkUrl, altText, metaKeywords, progressCallback) => {
           const supabase = await getSupabase(); // Get fresh authenticated client
           const accessToken = await getGoogleDriveToken();
           const isBackupEnabled = localStorage.getItem('backup_storage_enabled') === 'true';
@@ -246,7 +246,6 @@ window.appState = {
           let supabasePath = null;
           if (isBackupEnabled) {
             try {
-              // Convent path: siteName/{firebase_uid}/{board}/{filename}
               const fileExt = file.name.split('.').pop();
               const filename = `${Date.now()}_${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${fileExt}`;
               const path = `${window.appState.siteSettings.site_name}/${window.appState.currentUser.uid}/${activeBoard.name}/${filename}`;
@@ -273,32 +272,62 @@ window.appState = {
             }
           }
 
-          // 4. Save metadata to Supabase images table
-          const { error: dbErr } = await supabase
+          // 4. Save metadata with SEO fields to Supabase images table
+          const imageRecord = {
+            user_id: window.appState.currentUser.uid,
+            board_id: boardId,
+            title,
+            description: finalDescription,
+            alt_text: altText || title,
+            meta_keywords: metaKeywords || '',
+            drive_file_id: driveFileId,
+            drive_view_link: driveViewLink,
+            drive_download_link: driveDownloadLink,
+            supabase_storage_path: supabasePath,
+            is_public: activeBoard.is_public
+          };
+
+          let insertedList = null;
+          let dbErr = null;
+
+          const res = await supabase
             .from('images')
-            .insert({
-              user_id: window.appState.currentUser.uid,
-              board_id: boardId,
-              title,
-              description: finalDescription,
-              drive_file_id: driveFileId,
-              drive_view_link: driveViewLink,
-              drive_download_link: driveDownloadLink,
-              supabase_storage_path: supabasePath,
-              is_public: activeBoard.is_public
-            });
+            .insert(imageRecord)
+            .select('*, users!images_user_id_fkey(*), boards!inner(*)');
+          
+          insertedList = res.data;
+          dbErr = res.error;
+
+          if (dbErr && dbErr.message && (dbErr.message.includes('alt_text') || dbErr.message.includes('meta_keywords'))) {
+            // Fallback for older database schemas missing new SEO columns
+            delete imageRecord.alt_text;
+            delete imageRecord.meta_keywords;
+            const res2 = await supabase
+              .from('images')
+              .insert(imageRecord)
+              .select('*, users!images_user_id_fkey(*), boards!inner(*)');
+            insertedList = res2.data;
+            dbErr = res2.error;
+          }
 
           if (dbErr) throw dbErr;
 
-          // Reload current view
-          const currentHash = window.location.hash;
-          if (currentHash.startsWith('#board/')) {
-            const currentBoardId = currentHash.split('/')[1].split('?')[0];
-            if (currentBoardId === boardId) {
-              await BoardView.render({ id: boardId });
+          const newImg = insertedList && insertedList.length > 0 ? insertedList[0] : null;
+
+          // Instant Real-Time Gallery Update without page reload
+          const currentPath = window.location.pathname;
+          if (newImg) {
+            if (currentPath === '/' || currentPath === '' || currentPath.startsWith('/home') || currentPath.startsWith('/pin/')) {
+              HomeView.images = [newImg, ...HomeView.images.filter(i => i.id !== newImg.id)];
+              if (HomeView.renderGrid) HomeView.renderGrid();
+            } else if (currentPath.startsWith('/board/')) {
+              if (BoardView.images) {
+                BoardView.images = [newImg, ...BoardView.images.filter(i => i.id !== newImg.id)];
+                if (BoardView.renderGrid) BoardView.renderGrid();
+              }
+            } else if (currentPath.startsWith('/profile') || currentPath.startsWith('/u/')) {
+              if (ProfileView.render) await ProfileView.render();
             }
-          } else if (currentHash.startsWith('#profile')) {
-            await ProfileView.render();
           }
         },
         () => {
@@ -540,8 +569,9 @@ const openLightboxOverlay = async (imageId) => {
 
     // Update SEO Metadata for search bot index crawls
     const imageUrl = data.drive_view_link || `https://lh3.googleusercontent.com/d/${data.drive_file_id}`;
-    const cleanDesc = data.description || `PinGrid image discovery details page - ${data.title}`;
-    updateSEOMetadata(data.title, cleanDesc, imageUrl);
+    const cleanDesc = data.alt_text || data.description || `PinGrid image discovery details page - ${data.title}`;
+    const metaKw = data.meta_keywords || data.title;
+    updateSEOMetadata(data.title, cleanDesc, imageUrl, metaKw);
 
     wrapper.innerHTML = renderLightbox(data, window.appState.currentUser, window.appState.isAdmin);
     
@@ -923,7 +953,7 @@ const parseUrl = () => {
 };
 
 // --- SEO METADATA UPDATER ---
-const updateSEOMetadata = (title, description, imageUrl = null) => {
+const updateSEOMetadata = (title, description, imageUrl = null, keywords = null) => {
   const siteName = window.appState.siteSettings?.site_name || 'PinGrid';
   document.title = `${title} | ${siteName}`;
   
@@ -939,6 +969,9 @@ const updateSEOMetadata = (title, description, imageUrl = null) => {
   };
 
   setMeta('meta[name="description"]', 'description', description);
+  if (keywords) {
+    setMeta('meta[name="keywords"]', 'keywords', keywords);
+  }
   setMeta('meta[property="og:title"]', 'og:title', `${title} | ${siteName}`, true);
   setMeta('meta[property="og:description"]', 'og:description', description, true);
   setMeta('meta[property="og:url"]', 'og:url', window.location.href, true);

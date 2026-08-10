@@ -47,6 +47,8 @@ create table public.images (
   board_id uuid references public.boards(id) on delete cascade,
   title text not null,
   description text,
+  alt_text text, -- Image SEO Alt Text for accessibility & search indexers
+  meta_keywords text, -- Image SEO Meta Keywords
   drive_file_id text not null,
   drive_view_link text not null,
   drive_download_link text not null,

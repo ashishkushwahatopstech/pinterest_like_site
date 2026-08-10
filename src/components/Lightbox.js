@@ -227,12 +227,21 @@ export const renderLightbox = (img, currentUser, isAdmin) => {
               <!-- Edit Inline Form (Hidden initially) -->
               <div id="lightbox-edit-form" style="display: none; flex-direction: column; gap: 16px; margin-bottom: 24px; padding: 16px; border-radius: var(--radius-md); background: var(--bg-primary); border: 1px solid var(--border-color);">
                 <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
                   <label class="form-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: var(--text-secondary);">Title</label>
                   <input type="text" id="edit-img-title" class="form-control" value="${img.title}" required style="font-weight: 600; width: 100%; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
                 </div>
                 <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                  <label class="form-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: var(--text-secondary);">SEO Alt Text (Accessibility & Search)</label>
+                  <input type="text" id="edit-img-alt" class="form-control" value="${img.alt_text || img.title}" placeholder="e.g. Sunset view over mountains" style="font-weight: 500; width: 100%; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
                   <label class="form-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: var(--text-secondary);">Description</label>
                   <textarea id="edit-img-desc" class="form-control" rows="3" style="resize: vertical; width: 100%; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-family: var(--font-body);">${cleanDescText || ''}</textarea>
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                  <label class="form-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: var(--text-secondary);">SEO Keywords</label>
+                  <input type="text" id="edit-img-keywords" class="form-control" value="${img.meta_keywords || ''}" placeholder="e.g. wallpaper, nature, 4k" style="font-weight: 500; width: 100%; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
                 </div>
                 <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
                   <label class="form-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: var(--text-secondary);">Destination / Promotional Link (Optional)</label>
@@ -306,11 +315,17 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
     if (wrapper) wrapper.innerHTML = '';
     if (lightboxModal) lightboxModal.classList.remove('show');
 
-    window.appState.navigate(referrer, true);
-
-    setTimeout(() => {
+    // If underlying gallery container exists in DOM, do not re-fetch/re-render (prevents grid shuffling)
+    const activeGalleryDom = document.getElementById('grid-container') || document.getElementById('board-view-container');
+    if (activeGalleryDom && window.location.pathname.startsWith('/pin/')) {
+      window.history.pushState({}, '', referrer);
       window.scrollTo({ top: savedScrollY, behavior: 'instant' });
-    }, 40);
+    } else {
+      window.appState.navigate(referrer, true);
+      setTimeout(() => {
+        window.scrollTo({ top: savedScrollY, behavior: 'instant' });
+      }, 40);
+    }
 
     if (callbacks.onClose) callbacks.onClose();
   };
@@ -325,11 +340,16 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
     if (wrapper) wrapper.innerHTML = '';
     if (lightboxModal) lightboxModal.classList.remove('show');
 
-    if (referrer && referrer.includes('/board/')) {
-      const boardPath = referrer.split('?')[0];
-      window.appState.navigate(boardPath, true);
+    const activeGalleryDom = document.getElementById('grid-container') || document.getElementById('board-view-container');
+    if (activeGalleryDom && window.location.pathname.startsWith('/pin/')) {
+      window.history.pushState({}, '', referrer);
     } else {
-      window.appState.navigate('/', true);
+      if (referrer && referrer.includes('/board/')) {
+        const boardPath = referrer.split('?')[0];
+        window.appState.navigate(boardPath, true);
+      } else {
+        window.appState.navigate('/', true);
+      }
     }
     window.scrollTo({ top: 0, behavior: 'instant' });
 
@@ -457,7 +477,9 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
     saveChangesBtn.onclick = async (e) => {
       e.stopPropagation();
       const newTitle = document.getElementById('edit-img-title').value.trim();
+      const newAltText = document.getElementById('edit-img-alt') ? document.getElementById('edit-img-alt').value.trim() : '';
       const newRawDesc = document.getElementById('edit-img-desc').value.trim();
+      const newKeywords = document.getElementById('edit-img-keywords') ? document.getElementById('edit-img-keywords').value.trim() : '';
       const newLink = document.getElementById('edit-img-link') ? document.getElementById('edit-img-link').value.trim() : '';
       const allowLinkAccess = isLinkAccessAllowed(img);
       
@@ -471,11 +493,13 @@ export const setupLightboxEvents = (img, currentUser, isAdmin, callbacks) => {
 
       try {
         const finalDescription = formatDescriptionWithLink(newRawDesc, newLink, allowLinkAccess);
-        await callbacks.onSave(img.id, newTitle, finalDescription);
+        await callbacks.onSave(img.id, newTitle, finalDescription, newAltText, newKeywords);
         
         // Update local object values
         img.title = newTitle;
         img.description = finalDescription;
+        img.alt_text = newAltText || newTitle;
+        img.meta_keywords = newKeywords;
 
         const updatedDestUrl = extractDestinationUrl(finalDescription);
         const updatedCleanDesc = getCleanDescription(finalDescription);

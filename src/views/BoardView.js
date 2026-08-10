@@ -1,6 +1,6 @@
 import { renderBreadcrumb } from '../components/Breadcrumb';
 import { getSupabase, supabasePublic } from '../services/supabase';
-import { renderMasonryGrid, setupGridEvents } from '../components/MasonryGrid';
+import { renderMasonryGrid, renderListView, renderViewModeSwitcher, setupGridEvents } from '../components/MasonryGrid';
 import { renderPinSkeleton } from '../components/Skeleton';
 import { renameBoardFolder, deleteFromDrive } from '../services/drive';
 import { getGoogleDriveToken } from '../services/api';
@@ -14,6 +14,7 @@ export const BoardView = {
   images: [],
   isOwner: false,
   loading: true,
+  viewMode: localStorage.getItem('pingrid_gallery_view_mode') || 'grid',
 
   render: async function(params = {}) {
     const boardId = params.id;
@@ -244,9 +245,10 @@ export const BoardView = {
           </div>
         ` : ''}
 
-        <!-- Masonry Grid -->
+        <!-- Collection Gallery Container -->
         <div id="board-grid-container" class="masonry-container">
-          ${renderMasonryGrid(this.images, false)}
+          ${renderViewModeSwitcher(this.viewMode)}
+          ${this.viewMode === 'list' ? renderListView(this.images, false) : renderMasonryGrid(this.images, false)}
         </div>
       </div>
     `;
@@ -254,12 +256,41 @@ export const BoardView = {
     this.setupEvents();
   },
 
+  renderGrid: function() {
+    const gridContainer = document.getElementById('board-grid-container');
+    if (!gridContainer) return;
+
+    const switcherHtml = renderViewModeSwitcher(this.viewMode);
+    const galleryHtml = this.viewMode === 'list' 
+      ? renderListView(this.images, false)
+      : renderMasonryGrid(this.images, false);
+
+    gridContainer.innerHTML = `${switcherHtml}${galleryHtml}`;
+    this.setupEvents();
+  },
+
   setupEvents: function() {
+    // Bind View Mode Switcher buttons
+    const container = document.getElementById('board-grid-container');
+    if (container) {
+      container.querySelectorAll('.btn-view-mode').forEach(btn => {
+        btn.onclick = (e) => {
+          e.preventDefault();
+          const mode = btn.dataset.mode;
+          if (mode && mode !== this.viewMode) {
+            this.viewMode = mode;
+            localStorage.setItem('pingrid_gallery_view_mode', mode);
+            this.renderGrid();
+          }
+        };
+      });
+    }
+
     // Handle grid clicks (like/detail)
-    const gridEl = document.getElementById('gallery-masonry-grid');
-    if (gridEl) {
+    const activeGalleryEl = document.getElementById(this.viewMode === 'list' ? 'gallery-list-view' : 'gallery-masonry-grid');
+    if (activeGalleryEl) {
       setupGridEvents(
-        gridEl,
+        activeGalleryEl,
         (pinId) => {
           sessionStorage.setItem('pin_restore_scroll', window.scrollY);
           sessionStorage.setItem('pin_restore_referrer', window.location.pathname + window.location.search);

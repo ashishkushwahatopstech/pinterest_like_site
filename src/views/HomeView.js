@@ -1,6 +1,6 @@
 import { renderBreadcrumb } from '../components/Breadcrumb';
 import { supabasePublic, getSupabase } from '../services/supabase';
-import { renderMasonryGrid, setupGridEvents, setupInfiniteScroll } from '../components/MasonryGrid';
+import { renderMasonryGrid, renderListView, renderViewModeSwitcher, setupGridEvents, setupInfiniteScroll } from '../components/MasonryGrid';
 import { renderPinSkeleton } from '../components/Skeleton';
 import { sortRecommendedFeed, trackUserSearch } from '../services/recommendations';
 import { getOptimizedImageUrl } from '../utils/image';
@@ -16,6 +16,7 @@ export const HomeView = {
   searchQuery: '',
   selectedDateFilter: 'all', // 'all' | 'day' | 'week' | 'month'
   selectedShapeFilter: 'all', // 'all' | 'portrait' | 'landscape' | 'square'
+  viewMode: localStorage.getItem('pingrid_gallery_view_mode') || 'grid',
   page: 0,
   activeFetchId: 0,
   hasMore: false,
@@ -633,13 +634,31 @@ export const HomeView = {
     }
 
     const showButton = this.page >= 2;
-    gridContainer.innerHTML = renderMasonryGrid(this.images, this.hasMore, 'gallery-masonry-grid', showButton);
+    const switcherHtml = renderViewModeSwitcher(this.viewMode);
+    const galleryHtml = this.viewMode === 'list' 
+      ? renderListView(this.images, this.hasMore, 'gallery-list-view', showButton)
+      : renderMasonryGrid(this.images, this.hasMore, 'gallery-masonry-grid', showButton);
+
+    gridContainer.innerHTML = `${switcherHtml}${galleryHtml}`;
+
+    // Bind View Mode Switcher buttons
+    gridContainer.querySelectorAll('.btn-view-mode').forEach(btn => {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        const mode = btn.dataset.mode;
+        if (mode && mode !== this.viewMode) {
+          this.viewMode = mode;
+          localStorage.setItem('pingrid_gallery_view_mode', mode);
+          this.renderGrid();
+        }
+      };
+    });
 
     // Setup Grid event listeners (Clicks & Likes)
-    const gridEl = document.getElementById('gallery-masonry-grid');
-    if (gridEl) {
+    const activeGalleryEl = document.getElementById(this.viewMode === 'list' ? 'gallery-list-view' : 'gallery-masonry-grid');
+    if (activeGalleryEl) {
       setupGridEvents(
-        gridEl,
+        activeGalleryEl,
         (pinId) => {
           sessionStorage.setItem('pin_restore_scroll', window.scrollY);
           sessionStorage.setItem('pin_restore_referrer', window.location.pathname + window.location.search);

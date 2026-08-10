@@ -88,35 +88,15 @@ export const trackUserLike = (image) => {
 
 // --- SORTING & RECOMMENDATIONS ---
 
-// Sort feed images based on user interests + recency boost
 export const sortRecommendedFeed = (images) => {
   if (!images || images.length === 0) return [];
-  const interests = getUserInterests();
 
-  const scored = images.map(img => {
-    let score = 0;
-    const text = `${img.title || ''} ${img.description || ''} ${img.boards?.name || ''}`;
-    const keywords = extractKeywords(text);
-
-    keywords.forEach(kw => {
-      if (interests[kw]) {
-        score += interests[kw];
-      }
-    });
-
-    // Recency booster: newer images get a slight push to keep the feed fresh
-    const ageInHours = (Date.now() - new Date(img.created_at).getTime()) / (1000 * 60 * 60);
-    const recencyBoost = Math.max(0, 8 - (ageInHours / 48)); // Boost up to 8 points, decays over 16 days
-    score += recencyBoost;
-
-    // Apply +/- 15% random variance to prevent repetitive layouts and encourage exploration
-    const variance = 0.85 + (Math.random() * 0.3);
-    const finalScore = score * variance;
-
-    return { ...img, recScore: finalScore };
+  // Keep original chronological / deterministic order intact to prevent layout shuffling
+  return [...images].sort((a, b) => {
+    const timeA = new Date(a.created_at || 0).getTime();
+    const timeB = new Date(b.created_at || 0).getTime();
+    return timeB - timeA;
   });
-
-  return scored.sort((a, b) => b.recScore - a.recScore);
 };
 
 // Get contextual + user-interest recommendations for related grid below lightbox
