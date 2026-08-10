@@ -649,9 +649,16 @@ body::before {
 
 .lightbox-scroll-container {
   width: 100%;
-  max-width: 1400px;
+  max-width: 100%;
   margin: 0 auto;
+  padding: 0 24px;
   box-sizing: border-box;
+}
+
+@media (max-width: 767px) {
+  .lightbox-scroll-container {
+    padding: 0 12px;
+  }
 }
 
 .lightbox-content-wrapper {
@@ -703,37 +710,39 @@ body::before {
   }
 }
 
-/* Full Width & Larger Images for "More Like This" Section */
+/* Full Width & Proportional Gallery Cards for "More Like This" Section */
 .lightbox-related-section {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
   margin-top: 48px;
-  padding: 0 4px;
+  padding: 0;
 }
 
 #gallery-masonry-grid-related {
-  column-count: 1;
-  column-gap: 24px;
+  column-count: 2;
+  column-gap: 16px;
   width: 100%;
 }
 
-@media (min-width: 540px) {
-  #gallery-masonry-grid-related {
-    column-count: 2;
-  }
-}
-
-@media (min-width: 900px) {
+@media (min-width: 640px) {
   #gallery-masonry-grid-related {
     column-count: 3;
-    column-gap: 28px;
+    column-gap: 20px;
   }
 }
 
-@media (min-width: 1300px) {
+@media (min-width: 1024px) {
   #gallery-masonry-grid-related {
-    column-count: 4;
+    column-count: 5;
+    column-gap: 20px;
+  }
+}
+
+@media (min-width: 1600px) {
+  #gallery-masonry-grid-related {
+    column-count: 6;
+    column-gap: 24px;
   }
 }@media (max-width: 640px) {
   .breadcrumb-container {
